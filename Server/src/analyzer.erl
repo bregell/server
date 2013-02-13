@@ -19,5 +19,10 @@
 input(Input) ->
 	case Input of
 		[Unit, Data, Status] ->
-			io:fwrite(Data)
+			io:fwrite(Unit),
+			io:fwrite("\n"),
+			io:fwrite(Data),
+			io:fwrite("\n"),
+			io:fwrite(Status),
+			io:fwrite("\n")
 	end.		
