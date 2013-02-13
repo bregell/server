@@ -25,11 +25,10 @@ worker() ->
 	receive
 		start ->
 			io:fwrite("TODO\n")
-	end.
+	end,
+	worker().
 
 loop(Pid) ->
 	Time = timer:minutes(5),
 	timer:send_after(Time, Pid, start),
 	loop(Pid).
-
-

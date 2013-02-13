@@ -59,4 +59,3 @@ new_status(SID, Status) ->
 	%% Makes a list of UPDATE statements for the given SID
 	Make = fun(B) -> lists:map(fun({C,D}) -> "UPDATE socket SET status="++D++" WHERE serialID='"++SID++"' AND id='"++C++"'" end, lists:zip(Id, B)) end,
 	Make(Status).
-
