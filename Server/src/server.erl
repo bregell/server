@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/0]).
+-export([start/1]).
 
 
 
@@ -15,9 +15,10 @@
 %% Internal functions
 %% ====================================================================
 
-start() ->
+start(Port) ->
 	odbc:start(),
-		spawn_link(listener, start, []),
+	spawn_link(listener, start, [Port]),
+	spawn_link(schedule_worker, start, []),	
 	loop().
 
 loop() ->

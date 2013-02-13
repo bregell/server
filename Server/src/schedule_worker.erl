@@ -8,7 +8,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/0]).
+-export([start/0,worker/0]).
 
 
 
@@ -17,17 +17,19 @@
 %% ====================================================================
 
 start() ->
-	self() ! start,
-	loop().
+	Pid = spawn_link(?MODULE, worker, []),
+	Pid ! start,
+	loop(Pid).
 	
 worker() ->
 	receive
 		start ->
-			io:fwrite("TODO")
+			io:fwrite("TODO\n")
 	end.
 
-loop() ->
+loop(Pid) ->
 	Time = timer:minutes(5),
-	timer:send_after(Time, start).
+	timer:send_after(Time, Pid, start),
+	loop(Pid).
 
 
