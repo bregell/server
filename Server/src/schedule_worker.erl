@@ -20,7 +20,8 @@ start() ->
 	Pid = spawn_link(?MODULE, worker, []),
 	Pid ! start,
 	loop(Pid).
-	
+
+%% @todo Implement connection with database and command builder
 worker() ->
 	receive
 		start ->

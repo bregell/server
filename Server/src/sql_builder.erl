@@ -17,8 +17,8 @@
 
 %% @doc 
 %% Input = 
-%% - [SID, Data, Status] where Data = [A,B,C,D] and Status = [A,B,C,D]
-%% - [SID, ID] where ID = [A, B, C, D] 
+%% [SID, Data, Status] where Data = [A,B,C,D] and Status = [A,B,C,D]
+%% or [SID, ID] where ID = [A, B, C, D] 
 %% @end
 input(Input) ->	
 	case Input of
