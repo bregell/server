@@ -31,17 +31,26 @@ worker(Msg, Listen) ->
 	case gen_tcp:accept(Listen) of
 		{ok, Socket} ->
 			Msg ! new_worker,
-			{ok, Data} = gen_tcp:recv(Socket, 0),
-			%% Parse string into 
-			Output = string:tokens(Data, ":"),
-			case Output of
-				[SID,Data,Status] ->
-					sql_builder:input([SID,string:tokens(Data, ";"),string:tokens(Status, ";")]);
-				[SID,Status] ->
-					controller:input([SID,string:tokens(Status, ";")])
-			end;				
+			case gen_tcp:recv(Socket, 0) of
+				{ok, Data} ->
+					%% Parse string into 
+					Output = string:tokens(binary_to_list(Data), ":"),
+					case Output of
+						[SID,Data,Status] ->
+							sql_builder:input([SID,string:tokens(Data, ";"),string:tokens(Status, ";")]);
+						[SID,Status] ->
+							controller:input([SID,string:tokens(Status, ";")])
+					end;
+				{error, Reason} ->
+					io:fwrite("Could not recieve "),
+					io:fwrite(Reason),
+					io:fwrite("\n"),
+					Msg ! new_worker
+			end;
 		{error, Reason} ->
-			io:fwrite("Could not recieve "++Reason++"\n"),
+			io:fwrite("Could not accept "),
+			io:fwrite(Reason),
+			io:fwrite("\n"),
 			Msg ! new_worker
 	end.
 
