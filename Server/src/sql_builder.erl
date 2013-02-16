@@ -43,7 +43,7 @@ new_data(SID, Data) ->
 	Combine = fun(A) -> lists:map(fun(D) -> "('"++SID++"','"++D++"',NOW())" end, lists:zipwith(fun(X, Y) -> X++"','"++Y end, A, Id)) end,
 	
 	%% From List to String
-	Values = string:join(Combine(SID, Data), ","),
+	Values = string:join(Combine(Data), ","),
 	
 	%% INSERT INTO consumption (serialId, id, activepower, timestamp) VALUES [(SID, Data[n], Status[n], NOW())]
 	%% Adds the SQL syntax
