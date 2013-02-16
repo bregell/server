@@ -19,7 +19,7 @@ start(Port)->
 	spawn_link(?MODULE, server, [Port]).
 
 server(Port) ->
-	case gen_tcp:listen(Port, [binary, {active, false}, {packet, 0}]) of
+	case gen_tcp:listen(Port, [list, {active, false}, {packet, 0}]) of
 		{ok, Listen} ->
 			spawn_link(?MODULE, worker, [self(), Listen]),
 			loop(Listen);
@@ -32,14 +32,16 @@ worker(Msg, Listen) ->
 		{ok, Socket} ->
 			Msg ! new_worker,
 			case gen_tcp:recv(Socket, 0) of
-				{ok, Data} ->
+				{ok, Package} ->
 					%% Parse string into 
-					Output = string:tokens(binary_to_list(Data), ":"),
+					Output = string:tokens(Package, ":"),
 					case Output of
 						[SID,Data,Status] ->
 							sql_builder:input([SID,string:tokens(Data, ";"),string:tokens(Status, ";")]);
 						[SID,Status] ->
-							controller:input([SID,string:tokens(Status, ";")])
+							controller:input([SID,string:tokens(Status, ";")]);
+						_ ->
+							io:fwrite("Error \n")
 					end;
 				{error, Reason} ->
 					io:fwrite("Could not recieve "),
