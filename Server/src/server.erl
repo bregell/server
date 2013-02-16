@@ -17,8 +17,8 @@
 
 start(Port) ->
 	odbc:start(),
-	spawn_link(listener, start, [Port]),
-	spawn_link(schedule_worker, start, []),	
+	server = spawn_link(listener, start, [Port]),
+	schedule = spawn_link(schedule_worker, start, []),
 	loop().
 
 loop() ->
