@@ -23,11 +23,16 @@
 input(Input) ->	
 	case Input of
 		[SID, Data, Status] ->
-			SQL = lists:append(new_data(SID, Data), new_status(SID, Status)),
-			odbc_unit:input(SQL);
+			odbc_unit:input(new_data(SID, Data)),
+			odbc_unit:input(new_status(SID, Status));
 		[SID, ID] ->
 			SQL = "SELECT * FROM consumption WHERE serialID='"++SID++"' AND id='"++ID++"' ORDER BY timestamp DESC LIMIT 120",
-			odbc_unit:input(SQL)
+			case odbc_unit:input(SQL) of
+				{selected, ColNames, Rows} ->
+					io:fwrite(ColNames);
+				{error, Reason} ->
+					io:fwrite(Reason)
+			end
 	end.	
 
 %% @doc 
@@ -47,7 +52,7 @@ new_data(SID, Data) ->
 	
 	%% INSERT INTO consumption (serialId, id, activepower, timestamp) VALUES [(SID, Data[n], Status[n], NOW())]
 	%% Adds the SQL syntax
-	"INSERT INTO consumption (serialId, id, activepower, timestamp) VALUES "++Values.
+	["INSERT INTO consumption (serialId, activepower, id, timestamp) VALUES "++Values].
 
 %% @doc 
 %% Input = [SID, ID] where ID = [A, B, C, D]  
