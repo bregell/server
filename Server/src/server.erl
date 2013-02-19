@@ -17,13 +17,13 @@
 
 start(Port) ->
 	odbc:start(),
-	server = spawn_link(listener, start, [Port]),
-	schedule = spawn_link(schedule_worker, start, []),
+	spawn_link(listener, start, [Port]),
+	spawn_link(schedule_worker, start, []),
 	loop().
 
 loop() ->
 	receive
-		end_server ->
-			erlang:exit("Reason")
+		_ ->
+			io:fwrite("Message received in server top level \n")
 	end,
 	loop().
