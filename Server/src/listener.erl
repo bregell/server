@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/1, server/1, worker/2, loop/1]).
+-export([start/1, server/1, listener/2, loop/1, receiver/2]).
 
 
 
@@ -21,34 +21,17 @@ start(Port)->
 server(Port) ->
 	case gen_tcp:listen(Port, [list, {active, false}, {packet, 0}]) of
 		{ok, Listen} ->
-			spawn_link(?MODULE, worker, [self(), Listen]),
+			spawn_link(?MODULE, listener, [self(), Listen]),
 			loop(Listen);
 		{error, Reason} ->
 			io:fwrite("Error cannot listen on port:"++Port++" Msg:" ++ Reason++"\n")
 	end.
  
-worker(Msg, Listen) ->
+listener(Msg, Listen) ->
 	case gen_tcp:accept(Listen) of
 		{ok, Socket} ->
-			Msg ! new_worker,
-			case gen_tcp:recv(Socket, 0) of
-				{ok, Package} ->
-					%% Parse string into 
-					Output = string:tokens(Package, ":"),
-					case Output of
-						[SID,Data,Status] ->
-							sql_builder:input([SID,string:tokens(Data, ";"),string:tokens(Status, ";")]);
-						[SID,Status] ->
-							controller:input([SID,string:tokens(Status, ";")]);
-						_ ->
-							io:fwrite("Error \n")
-					end;
-				{error, Reason} ->
-					io:fwrite("Could not recieve "),
-					io:fwrite(Reason),
-					io:fwrite("\n"),
-					Msg ! new_worker
-			end;
+			Msg ! new_listener,
+			receiver(Msg, Socket);
 		{error, Reason} ->
 			io:fwrite("Could not accept "),
 			io:fwrite(Reason),
@@ -56,9 +39,36 @@ worker(Msg, Listen) ->
 			Msg ! new_worker
 	end.
 
+receiver(Msg, Socket) ->
+	case gen_tcp:recv(Socket, 0) of
+		{ok, Package} ->
+			io:fwrite("Recieve OK\n"),
+			%% Parse string into 
+			Output = string:tokens(Package, ":"),
+			case Output of
+				[SID,Data,Status] ->
+					sql_builder:input([SID,string:tokens(Data, ";"),string:tokens(Status, ";")]);
+				[SID,Status] ->
+					controller:input([SID,string:tokens(Status, ";")]);
+				_ ->
+					io:fwrite("Error \n")
+			end,
+			receiver(Msg, Socket);
+		{error, Reason} ->
+			io:fwrite("Could not recieve "),
+			io:fwrite(Reason),
+			io:fwrite("\n")
+	end.
+	
+
+
 loop(Listen) ->
 	receive
-		new_worker ->
-			spawn_link(?MODULE, worker, [self(), Listen])
+		new_listener ->
+			spawn_link(?MODULE, listener, [self(), Listen]);
+		{new_receiver, Socket} ->
+			spawn_link(?MODULE, receiver, [self(), Socket]);
+		_ ->
+			io:fwrite("Bad Msg \n")
 	end,
 	loop(Listen).
