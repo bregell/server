@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/3,worker/2,send/2]).
+-export([start/3,worker/0,send/2]).
 
 
 
@@ -18,8 +18,8 @@
 start(Address, Port, Input) ->
 	case gen_tcp:connect(Address, Port, [list, {active, false}, {packet, 0}]) of
 		{ok, Socket} ->
-			Pid = spawn_link(?MODULE, worker, [Socket, string:tokens(Input, ":")]),
-			loop(Pid, 10);
+			Pid = spawn_link(?MODULE, worker, []),
+			loop(Pid, 10, Socket, string:tokens(Input, ":"));
 		{error, Reason} ->
 			io:fwrite("Error: "),
 			io:fwrite(Reason)
@@ -39,15 +39,16 @@ send(Socket, Units) ->
 			io:fwrite("\n")
 	end.
 
-worker(Socket, Units) ->
+worker() ->
 	receive
-		start ->
-			spawn_link(?MODULE, send, [Socket, Units])
+		{start, Socket, Units} ->
+			spawn_link(?MODULE, send, [Socket, Units]);
+		_ ->
+			io:fwrite("Bad Msg \n")
 	end,
-	worker(Socket, Units).
+	worker().
 
-loop(Pid, T) ->
-	timer:start(),
+loop(Pid, T, Socket, Units) ->
 	Time = timer:seconds(T),
-	timer:send_after(Time, Pid, start),
-	loop(Pid,T+10).
+	timer:send_after(Time, Pid, {start, Socket, Units}),
+	loop(Pid,T+10, Socket, Units).
