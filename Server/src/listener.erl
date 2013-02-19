@@ -66,8 +66,6 @@ loop(Listen) ->
 	receive
 		new_listener ->
 			spawn_link(?MODULE, listener, [self(), Listen]);
-		{new_receiver, Socket} ->
-			spawn_link(?MODULE, receiver, [self(), Socket]);
 		_ ->
 			io:fwrite("Bad Msg \n")
 	end,
