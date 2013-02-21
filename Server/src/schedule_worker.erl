@@ -25,7 +25,9 @@ start() ->
 worker() ->
 	receive
 		start ->
-			io:fwrite("TODO\n")
+			io:fwrite("TODO\n");
+		_ ->
+			io:fwrite("Bad message\n")
 	end,
 	worker().
 
