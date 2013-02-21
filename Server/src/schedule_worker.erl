@@ -19,7 +19,7 @@
 start() ->
 	Pid = spawn_link(?MODULE, worker, []),
 	Pid ! start,
-	loop(Pid, 5).
+	loop(Pid).
 
 %% @todo Implement connection with database and command builder
 worker() ->
@@ -31,7 +31,7 @@ worker() ->
 	end,
 	worker().
 
-loop(Pid, T) ->
-	Time = timer:minutes(T),
-	timer:send_after(Time, Pid, start),
-	loop(Pid,T+5).
+loop(Pid) ->
+	timer:sleep(timer:minutes(5)),
+	Pid ! start,
+	loop(Pid).
