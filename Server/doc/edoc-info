@@ -1,0 +1,3 @@
+{packages,[]}.
+{modules,[analyzer,command_builder,controller,listener,odbc_unit,
+          schedule_worker,server,sql_builder,test_client]}.
