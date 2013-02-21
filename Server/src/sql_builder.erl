@@ -16,10 +16,10 @@
 %% ====================================================================
 
 %% @doc 
-%% Input = 
-%% [SID, Data, Status] where Data = [A,B,C,D] and Status = [A,B,C,D]
-%% or [SID, ID] where ID = [A, B, C, D] 
+%% Takes a preformatted input in the form of a list and converts it to SQL Strings.
 %% @end
+%% @spec (Input) -> string()
+%% Input = [string()]
 input(Input) ->	
 	case Input of
 		[SID, Data, Status] ->
@@ -28,16 +28,19 @@ input(Input) ->
 		[SID, ID] ->
 			SQL = "SELECT * FROM consumption WHERE serialID='"++SID++"' AND id='"++ID++"' ORDER BY timestamp DESC LIMIT 120",
 			case odbc_unit:input(SQL) of
-				{selected, ColNames, Rows} ->
+				{selected, ColNames, _} ->
 					io:fwrite(ColNames);
 				{error, Reason} ->
 					io:fwrite(Reason)
 			end
 	end.	
 
-%% @doc 
-%% Input = [Unit, Data, Status] where Data = [A,B,C,D] and Status = [A,B,C,D] 
+%% @doc
+%% This function is called when the input is new data to be put into the table.
 %% @end
+%% @spec (SID, Data) -> [string()]
+%% SID = string()
+%% Data = [string()]
 new_data(SID, Data) ->
 	%% List of Id tags for each socket
 	Id = ["1", "2", "3", "4"],
@@ -54,9 +57,12 @@ new_data(SID, Data) ->
 	%% Adds the SQL syntax
 	["INSERT INTO consumption (serialId, activepower, id, timestamp) VALUES "++Values].
 
-%% @doc 
-%% Input = [SID, ID] where ID = [A, B, C, D]  
+%% @doc
+%% This function is called when the input is new statuses for the unit. 
 %% @end
+%% @spec (SID, Status) -> [string()]
+%% SID = string()
+%% Status = [string()]
 new_status(SID, Status) ->
 	%% List of Id tags for each socket
 	Id = ["1", "2", "3", "4"],

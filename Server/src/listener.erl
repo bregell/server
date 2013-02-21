@@ -15,9 +15,20 @@
 %% Internal functions
 %% ====================================================================
 
+%% @doc
+%% Starts a listener and waits for connections and relays the received data 
+%% to the right module.
+%% @end
+%% @spec (Port) -> pid()
+%% Port = inet:portnumber() 
 start(Port)->
 	spawn_link(?MODULE, server, [Port]).
 
+%% @doc
+%% The actual server starts a listener and goes into the loop
+%% @end
+%% @spec (Port) -> (pid() | string()) 
+%% Port = inet:portnumber()
 server(Port) ->
 	case gen_tcp:listen(Port, [list, {active, false}, {packet, 0}]) of
 		{ok, Listen} ->
@@ -26,7 +37,14 @@ server(Port) ->
 		{error, Reason} ->
 			io:fwrite("Error cannot listen on port:"++Port++" Msg:" ++ Reason++"\n")
 	end.
- 
+
+%% @doc
+%% Waits for a connection and when one is received sends a message to loop
+%% to start a new instace of itself.
+%% @end
+%% @spec (Msg, Listen) -> string()
+%% Msg = pid() 
+%% Listen = socket()
 listener(Msg, Listen) ->
 	case gen_tcp:accept(Listen) of
 		{ok, Socket} ->
@@ -39,6 +57,13 @@ listener(Msg, Listen) ->
 			Msg ! new_worker
 	end.
 
+%% @doc
+%% Waits for a package and when one is received it inteprets the data and passes
+%% it to the right module, then goes back and waits for new packages.
+%% @end
+%% @spec (Msg, Socket) -> string()
+%% Msg = pid() 
+%% Socket = socket()
 receiver(Msg, Socket) ->
 	case gen_tcp:recv(Socket, 0) of
 		{ok, Package} ->
@@ -60,8 +85,11 @@ receiver(Msg, Socket) ->
 			io:fwrite("\n")
 	end.
 	
-
-
+%% @doc
+%% Waits for messages, primarily to spawn a new listener. 
+%% @end
+%% @spec (Listen) -> (pid() | string())
+%% Listen = socket()
 loop(Listen) ->
 	receive
 		new_listener ->

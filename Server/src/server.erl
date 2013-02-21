@@ -15,12 +15,21 @@
 %% Internal functions
 %% ====================================================================
 
+%% @doc
+%% Starts the processes that need to run through out the whole time the server runs.
+%% Then goes in to a loop and waits for messages.
+%% @end
+%% @spec (Port) -> (ok() + pid() + pid())
+%% Port = port()
 start(Port) ->
 	odbc:start(),
 	spawn_link(listener, start, [Port]),
 	spawn_link(schedule_worker, start, []),
 	loop().
 
+%% @doc
+%% Top instance of the server handles all messages sent to top level.
+%% @end
 loop() ->
 	receive
 		_ ->

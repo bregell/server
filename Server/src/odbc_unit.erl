@@ -15,7 +15,12 @@
 %% Internal functions
 %% ====================================================================
 
-%% @doc Sql = [SQL].
+%% @doc 
+%% Takes a list of SQL Strings and sends them to the database.
+%% @end
+%% @spec (Sql) -> (ok() | {error, Reason})
+%% Sql = [string()]
+%% Reason = string()
 input(Sql) ->
 	{ok, Conn} = odbc:connect("DSN=DB", []),
 	lists:foreach(fun(A) -> odbc:sql_query(Conn, A) end, Sql),

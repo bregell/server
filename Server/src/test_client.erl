@@ -15,10 +15,30 @@
 %% Internal functions
 %% ====================================================================
 
+%% @doc
+%% Starts the test client on port 39500 on localhost 
+%% @end
+%% @spec (Input) -> any()
+%% Input = string()
 start(Input) ->
-	start(localhost, 50000, Input).
-start(Port, Input) ->
-	start(localhost, Port, Input).
+	start(localhost, 39500, Input).
+
+%% @doc
+%% Same as start/1 but alsp specify adress
+%% @end
+%% @spec (Address,Input) -> any()
+%% Adress = (inet:address() | inet:hostname())
+%% Input = string()
+start(Adress, Input) ->
+	start(Adress, 39500, Input).
+
+%% @doc
+%% Same as start/2 but also specify port
+%% @end
+%% @spec (Address,Port,Input) -> any()
+%% Adress = (inet:address() | inet:hostname())
+%% Port = inet:portnumber()
+%% Input = string()
 start(Address, Port, Input) ->
 	case gen_tcp:connect(Address, Port, [list, {active, false}, {packet, 0}]) of
 		{ok, Socket} ->
@@ -29,7 +49,14 @@ start(Address, Port, Input) ->
 			io:fwrite(Reason)
 	end.
 
-%% @todo Implement connection with database and command builder
+%% @doc
+%% Sends mockupdata to the server
+%% @end
+%% @spec (Msg, Socket, Units) -> string()
+%% Msg = pid()
+%% Socket = socket()
+%% Units = [UnitID] 
+%% UnitID = string()
 send(Msg, Socket, Units) ->
 	timer:sleep(timer:seconds(10)),
 	Msg ! start,
@@ -46,6 +73,13 @@ send(Msg, Socket, Units) ->
 			io:fwrite("\n")
 	end.
 
+%% @doc
+%% Waits for a message to start a new instance of send
+%% @end
+%% @spec (Socket, Units) -> string()
+%% Socket = socket()
+%% Units = [UnitID] 
+%% UnitID = string()
 worker(Socket, Units) -> 
 	receive
 		start ->
