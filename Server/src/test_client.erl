@@ -33,11 +33,8 @@ start(Address, Port, Input) ->
 send(Msg, Socket, Units) ->
 	timer:sleep(timer:seconds(10)),
 	Msg ! start,
-	{V1,S1} = random:uniform_s(500,random:seed(now())),
-	{V2,S2} = random:uniform_s(500, S1),
-	{V3,S3} = random:uniform_s(500, S2),
-	{V4,S4} = random:uniform_s(500, S3),
-	Data = [V1,V2,V3,V4],
+	random:seed(now()),
+	Data = [random:uniform(500), random:uniform(500), random:uniform(500), random:uniform(500)],
 	Convert = fun(A) -> lists:map(fun(B) -> integer_to_list(B) end, A) end,
 	Packet = fun(A) -> A++":"++string:join(Convert(Data), ";")++":1;1;1;1" end,
 	case lists:foreach(fun(A) -> gen_tcp:send(Socket, Packet(A)) end, Units) of
