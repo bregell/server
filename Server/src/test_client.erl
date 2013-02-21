@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/1,start/2,start/3,worker/2,send/4]).
+-export([start/1,start/2,start/3,worker/2,send/3]).
 
 
 
@@ -30,13 +30,13 @@ start(Address, Port, Input) ->
 	end.
 
 %% @todo Implement connection with database and command builder
-send(Msg, Socket, Units, State) ->
+send(Msg, Socket, Units) ->
 	timer:sleep(timer:seconds(10)),
 	Msg ! start,
-	{V1,S1} = random:uniform_s(500, State),
+	{V1,S1} = random:uniform_s(500,random:seed(now())),
 	{V2,S2} = random:uniform_s(500, S1),
 	{V3,S3} = random:uniform_s(500, S2),
-	{V4,_} = random:uniform_s(500, S3),
+	{V4,S4} = random:uniform_s(500, S3),
 	Data = [V1,V2,V3,V4],
 	Convert = fun(A) -> lists:map(fun(B) -> integer_to_list(B) end, A) end,
 	Packet = fun(A) -> A++":"++string:join(Convert(Data), ";")++":1;1;1;1" end,
@@ -52,8 +52,7 @@ send(Msg, Socket, Units, State) ->
 worker(Socket, Units) -> 
 	receive
 		start ->
-			{A1,A2,A3} = now(),
-			spawn_link(?MODULE, send, [self(), Socket, Units, random:seed(A1,A2,A3)]);
+			spawn_link(?MODULE, send, [self(), Socket, Units]);
 		_ ->
 			io:fwrite("Bad Msg \n")
 	end,
