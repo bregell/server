@@ -23,17 +23,24 @@
 input(Input) ->	
 	case Input of
 		[SID, Data, Status] ->
-			odbc_unit:input(new_data(SID, Data)),
-			odbc_unit:input(new_status(SID, Status));
-		[SID, ID] ->
-			SQL = "SELECT * FROM consumption WHERE serialID='"++SID++"' AND id='"++ID++"' ORDER BY timestamp DESC LIMIT 120",
-			case odbc_unit:input(SQL) of
-				{selected, ColNames, _} ->
-					io:fwrite(ColNames);
+			SQL = lists:append(catch(new_data(SID, Data)),catch(new_status(SID, Status))),
+			try (odbc_unit:input(SQL)) of
+				{ok, Answer} ->
+					{ok, Answer}
+			catch
 				{error, Reason} ->
-					io:fwrite(Reason)
+					throw({error, Reason})	
+			end;
+		[SID, ID] ->
+			SQL = "SELECT * FROM consumption WHERE serialID='"++SID++"' AND id='"++ID++"' LIMIT 10",
+			try (odbc_unit:input([SQL])) of
+				{ok, Answer} ->
+					{ok, Answer}
+			catch	
+				{error, Reason} ->
+					throw({error, Reason})
 			end
-	end.	
+	end.
 
 %% @doc
 %% This function is called when the input is new data to be put into the table.
