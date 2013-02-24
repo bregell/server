@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/1,start/2,start/3,worker/2,send/3]).
+-export([start/1,start/2,start/3,worker/2,send/3,receiever/1]).
 
 
 
@@ -42,7 +42,9 @@ start(Adress, Input) ->
 start(Address, Port, Input) ->
 	case gen_tcp:connect(Address, Port, [list, {active, false}, {packet, 0}]) of
 		{ok, Socket} ->
-			Pid = spawn_link(?MODULE, worker, [Socket, string:tokens(Input, ":")]),
+			Units = string:tokens(Input, ":"),
+			spawn_link(?MODULE, receiever, [Socket]),
+			Pid = spawn_link(?MODULE, worker, [Socket, Units]),
 			Pid ! start;
 		{error, Reason} ->
 			io:fwrite("Error: "),
@@ -72,6 +74,18 @@ send(Msg, Socket, Units) ->
 			io:fwrite(Reason),
 			io:fwrite("\n")
 	end.
+
+receiever(Socket) ->
+	case gen_tcp:recv(Socket, 0) of
+		{ok, Packet} ->
+			io:fwrite("Receieved: "),
+			io:fwrite(Packet),
+			io:fwrite("\n");
+		{error, Reason} ->
+			throw({error, Reason})
+	end,
+	receiever(Socket).
+		
 
 %% @doc
 %% Waits for a message to start a new instance of send
