@@ -19,12 +19,14 @@
 %% Starts the processes that need to run through out the whole time the server runs.
 %% Then goes in to a loop and waits for messages.
 %% @end
-%% @spec (Port) -> (ok() + pid() + pid())
+%% @spec (Port) -> (ok() | pid())
 %% Port = port()
 start(Port) ->
 	odbc:start(),
+	Pid_cont = spawn_link(controller, start, []),
+	register(controller, Pid_cont),
 	spawn_link(listener, start, [Port]),
-	spawn_link(schedule_worker, start, []),
+	spawn_link(schedule_worker, start, []),	
 	loop().
 
 %% @doc
