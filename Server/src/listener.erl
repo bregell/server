@@ -35,7 +35,11 @@ server(Port) ->
 			spawn_link(?MODULE, listener, [self(), Listen]),
 			loop(Listen);
 		{error, Reason} ->
-			io:fwrite("Error cannot listen on port:"++Port++" Msg:" ++ Reason++"\n")
+			io:fwrite("Error cannot listen on port:"),
+			io:fwrite(Port), 
+			io:fwrite("Msg:"), 
+			io:fwrite(Reason),
+			io:fwrite("\n")
 	end.
 
 %% @doc
@@ -46,10 +50,11 @@ server(Port) ->
 %% Msg = pid() 
 %% Listen = socket()
 listener(Msg, Listen) ->
+	io:fwrite("Waiting for connection\n"),
 	case gen_tcp:accept(Listen) of
 		{ok, Socket} ->
 			Msg ! new_listener,
-			receiver(Msg, Socket);
+			receiver(Socket, false);
 		{error, Reason} ->
 			io:fwrite("Could not accept "),
 			io:fwrite(Reason),
@@ -64,23 +69,38 @@ listener(Msg, Listen) ->
 %% @spec (Msg, Socket) -> string()
 %% Msg = pid() 
 %% Socket = socket()
-receiver(Msg, Socket) ->
+receiver(Socket, InList) ->
+	io:fwrite("Waiting for package\n"),
 	case gen_tcp:recv(Socket, 0) of
 		{ok, Package} ->
 			io:fwrite("Recieve OK\n"),
-			%% Parse string into 
+			%% Parse string into list 
 			Output = string:tokens(Package, ":"),
 			case Output of
 				[SID,Data,Status] ->
-					sql_builder:input([SID,string:tokens(Data, ";"),string:tokens(Status, ";")]);
+					case InList of
+						false -> 
+							controller ! {new,{SID,Socket}}
+					end,
+					try (sql_builder:input([SID,string:tokens(Data, ";"),string:tokens(Status, ";")])) of
+						{ok, _} ->
+							io:fwrite("Data sent without problems!\n")
+					catch
+						{error, Reason} ->
+							io:fwrite("Error when sending data!\n"),
+							io:fwrite(Reason),
+							io:fwrite("\n");
+						_ ->
+							io:fwrite("Strange things is happening!\n")
+					end;
 				[SID,Status] ->
-					controller:input([SID,string:tokens(Status, ";")]);
+					controller ! {send,{SID, Status}};
 				_ ->
-					io:fwrite("Error \n")
+					io:fwrite("Error no matching case, tcp packet thrown away.\n")
 			end,
-			receiver(Msg, Socket);
+			receiver(Socket, true);
 		{error, Reason} ->
-			io:fwrite("Could not recieve "),
+			io:fwrite("Could not recieve!\n"),
 			io:fwrite(Reason),
 			io:fwrite("\n")
 	end.
