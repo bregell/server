@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/1]).
+-export([start/0,start/1]).
 
 
 
@@ -18,6 +18,13 @@
 %% @doc
 %% Starts the processes that need to run through out the whole time the server runs.
 %% Then goes in to a loop and waits for messages.
+%% @end
+%% @spec () -> (ok() | pid())
+start() ->
+	start(39500).
+
+%% @doc
+%% Start/0 with custom port.
 %% @end
 %% @spec (Port) -> (ok() | pid())
 %% Port = port()
