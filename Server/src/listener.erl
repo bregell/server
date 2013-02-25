@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/1, server/1, listener/2, loop/1, receiver/2]).
+-export([start/1, server/1, listener/2, loop/1]).
 
 
 
@@ -35,9 +35,7 @@ server(Port) ->
 			spawn_link(?MODULE, listener, [self(), Listen]),
 			loop(Listen);
 		{error, Reason} ->
-			io:fwrite("Error cannot listen on port:"),
-			io:fwrite(Port), 
-			io:fwrite("Msg:"), 
+			io:fwrite("Error cannot listen on that port \n"),  
 			io:fwrite(Reason),
 			io:fwrite("\n")
 	end.
@@ -54,7 +52,7 @@ listener(Msg, Listen) ->
 	case gen_tcp:accept(Listen) of
 		{ok, Socket} ->
 			Msg ! new_listener,
-			receiver(Socket, false);
+			receiver(Socket);
 		{error, Reason} ->
 			io:fwrite("Could not accept "),
 			io:fwrite(Reason),
@@ -69,7 +67,7 @@ listener(Msg, Listen) ->
 %% @spec (Msg, Socket) -> string()
 %% Msg = pid() 
 %% Socket = socket()
-receiver(Socket, InList) ->
+receiver(Socket) ->
 	io:fwrite("Waiting for package\n"),
 	case gen_tcp:recv(Socket, 0) of
 		{ok, Package} ->
@@ -78,10 +76,7 @@ receiver(Socket, InList) ->
 			Output = string:tokens(Package, ":"),
 			case Output of
 				[SID,Data,Status] ->
-					case InList of
-						false -> 
-							controller ! {new,{SID,Socket}}
-					end,
+					controller ! {new,{SID,Socket}},
 					try (sql_builder:input([SID,string:tokens(Data, ";"),string:tokens(Status, ";")])) of
 						{ok, _} ->
 							io:fwrite("Data sent without problems!\n")
@@ -98,7 +93,7 @@ receiver(Socket, InList) ->
 				_ ->
 					io:fwrite("Error no matching case, tcp packet thrown away.\n")
 			end,
-			receiver(Socket, true);
+			receiver(Socket);
 		{error, Reason} ->
 			io:fwrite("Could not recieve!\n"),
 			io:fwrite(Reason),
