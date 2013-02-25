@@ -22,15 +22,16 @@
 %% Sql = [string()]
 input(Sql) ->
 	{ok, Conn} = odbc:connect("DSN=DB", []),
-	try (lists:foreach(fun(A) -> throw(odbc:sql_query(Conn, A)) end, Sql)) of
-		{updated, NRows} ->
-			{ok, {updated, NRows}};
-		{selected, ColNames, Rows} ->
-			{ok, {selected, ColNames, Rows}}
-	catch
-		{error, Reason} ->
-			throw({error, Reason})
-	end,
+	Function = fun(A) -> (try (odbc:sql_query(Conn, A)) of
+							 {updated, N} ->
+								throw ({ok,{updated, N}});
+							 {selected, C, R} ->
+								throw ({ok,{selected, C, R}})
+						 catch 
+							 {error, Reason} ->
+								throw ({error, Reason})
+						 end) end,
+	lists:foreach(Function, Sql),
 	odbc:disconnect(Conn).
 
 %% @doc 
@@ -49,6 +50,7 @@ bulk_input(Sql) ->
 			{ok, {selected, ColNames, Rows}}
 	catch
 		{error, Reason} ->
+			odbc:disconnect(Conn),
 			throw({error, Reason})
 	end,
 	odbc:disconnect(Conn).
