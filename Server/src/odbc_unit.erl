@@ -22,19 +22,19 @@
 %% Sql = [string()]
 input(Sql) ->
 	{ok, Conn} = odbc:connect("DSN=DB", []),
-	Return = [],
 	Function = fun(A) -> (try (odbc:sql_query(Conn, A)) of
 							 {updated, N} ->
-								lists:append(Return,[{ok,{updated, N}}]);
+								{updated, N};
 							 {selected, C, R} ->
-								lists:append(Return,[{ok,{selected, C, R}}])
+								{selected, C, R}
 						 catch 
 							 {error, Reason} ->
-								lists:append(Return,[{error, Reason}])
+								{error, Reason}
 						 end) end,
-	lists:foreach(Function, Sql),
+	%%lists:foreach(Function, Sql),
+	Return = [Function(N) || N <- Sql],
 	odbc:disconnect(Conn),
-	Return.
+	{ok, Return}.
 
 %% @doc 
 %% Takes a list of SQL Strings and sends them to the database as a bulk operation.
