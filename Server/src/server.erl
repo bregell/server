@@ -30,10 +30,9 @@ start() ->
 %% Port = port()
 start(Port) ->
 	odbc:start(),
-	Pid_cont = spawn_link(controller, start, []),
-	register(controller, Pid_cont),
-	spawn_link(listener, start, [Port]),
-	spawn_link(schedule_worker, start, []),	
+	register(controller, spawn_link(controller, start, [])),
+	register(listener, spawn_link(listener, start, [Port])),
+	register(schedule, spawn_link(schedule_worker, start, [])),	
 	loop().
 
 %% @doc

@@ -18,8 +18,9 @@
 %% @doc 
 %% Takes a preformatted input in the form of a list and converts it to SQL Strings.
 %% @end
-%% @spec (Input) -> string()
+%% @spec (Input) -> ({ok, [Answer]} | {error, Reason})
 %% Input = [string()]
+%% Answer = ({updated, NRows} | {selected, Cols, Rows})
 input(Input) ->	
 	case Input of
 		[SID, Data, Status] ->

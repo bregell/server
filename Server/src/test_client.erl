@@ -75,14 +75,19 @@ send(Msg, Socket, Units) ->
 			io:fwrite("\n")
 	end.
 
+%% @doc
+%% Waits for messages on the given socket and then prints them.
+%% @end
+%% @spec (Socket) -> string()
+%% Socket = socket()
 receiver(Socket) ->
 	case gen_tcp:recv(Socket, 0) of
 		{ok, Packet} ->
 			io:fwrite("Received: "),
 			io:fwrite(Packet),
 			io:fwrite("\n");
-		{error, Reason} ->
-			throw({error, Reason})
+		{error, _} ->
+			io:fwrite("Could not receive\n")
 	end,
 	receiver(Socket).
 		

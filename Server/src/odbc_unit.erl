@@ -18,7 +18,7 @@
 %% @doc 
 %% Takes a list of SQL Strings and sends them to the database one by one.
 %% @end
-%% @spec (Sql) -> (ok() | {error, Reason})
+%% @spec (Sql) -> ({ok,[tuple()]} | {error, Reason})
 %% Sql = [string()]
 input(Sql) ->
 	{ok, Conn} = odbc:connect("DSN=DB", []),

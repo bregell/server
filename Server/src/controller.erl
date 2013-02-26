@@ -15,12 +15,19 @@
 %% Internal functions
 %% ====================================================================
 
+%% @doc
+%% Starts the controller and registers the process that handles the list of sockets.
+%% @end
 start() ->
 	Pid = spawn_link(?MODULE, input ,[[]]),
 	register(input, Pid),
 	mailbox().
-	
-%% list of {SID,Socket} 
+
+%% @doc
+%% Handles a list of tuples and waits for messages.
+%% @end
+%% @spec (Data) -> [tuple()] | message()
+%% Data = [tuple()] | [] 
 %% @todo Implement this in mnesia or orddict
 input(Data) ->
 	receive
@@ -42,7 +49,9 @@ input(Data) ->
 	end,
 	input(New_Data).		
 
-%% Waits for messages
+%% @doc
+%% Waits for messages and relays them to the right process.
+%% @end
 mailbox() ->
 	receive
 		{new, {SID, Socket}} ->
@@ -54,7 +63,12 @@ mailbox() ->
 	end,
 	mailbox().
 
-%% Gets and sends to the right unit
+%% @doc
+%% Sends a message to the input process with the SID and then waits for the answer.
+%% @end
+%% @spec (SID, Status) -> (string() | {error, Reason})
+%% SID = string()
+%% Status = string()
 send(SID, Status) ->
 	input ! {get_socket, {SID, self()}},
 	receive 
@@ -66,6 +80,6 @@ send(SID, Status) ->
 				{error, Reason} ->
 					throw({error, Reason})
 			end;
-		{not_found} ->
+		{not_found} ->  
 			io:fwrite("Socket not found \n")
 	end.
