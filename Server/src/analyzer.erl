@@ -20,8 +20,8 @@ start() ->
 
 mailbox() ->
 	receive
-		{read, SID, Length} ->
-			spawn_link(?MODULE, worker, [SID, Length])
+		{read, SID} ->
+			spawn_link(?MODULE, worker, [SID, 960])
 	end,
 	mailbox().
 
