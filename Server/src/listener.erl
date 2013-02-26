@@ -88,7 +88,8 @@ receiver(Socket) ->
 							io:fwrite("\n");
 						_ ->
 							io:fwrite("Strange things is happening!\n")
-					end;
+					end,
+					analyzer ! {read, SID};
 				[SID,Status] ->
 					controller ! {send,{SID, Status}};
 				_ ->
