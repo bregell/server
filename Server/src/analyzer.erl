@@ -8,21 +8,22 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([input/1]).
+-export([start/0, worker/1]).
 
 
 
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
+start() ->
+	mailbox().
 
-input(Input) ->
-	case Input of
-		[Unit, Data, Status] ->
-			io:fwrite(Unit),
-			io:fwrite("\n"),
-			io:fwrite(Data),
-			io:fwrite("\n"),
-			io:fwrite(Status),
-			io:fwrite("\n")
-	end.		
+mailbox() ->
+	receive
+		{read,SID} ->
+			spawn_link(?MODULE, worker, [SID])
+	end,
+	mailbox().
+
+worker(SID) ->
+	io:fwrite(sql_builder:input([SID])).
