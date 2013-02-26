@@ -52,7 +52,8 @@ listener(Msg, Listen) ->
 	case gen_tcp:accept(Listen) of
 		{ok, Socket} ->
 			Msg ! new_listener,
-			receiver(Socket);
+			receiver(Socket),
+			gen_tcp:close(Socket);
 		{error, Reason} ->
 			io:fwrite("Could not accept "),
 			io:fwrite(Reason),
