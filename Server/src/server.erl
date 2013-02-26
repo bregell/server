@@ -31,6 +31,7 @@ start() ->
 start(Port) ->
 	odbc:start(),
 	register(controller, spawn_link(controller, start, [])),
+	register(analyzer, spawn_link(analyzer, start, [])),
 	register(listener, spawn_link(listener, start, [Port])),
 	register(schedule, spawn_link(schedule_worker, start, [])),	
 	loop().
