@@ -32,8 +32,8 @@ input(Input) ->
 				{error, Reason} ->
 					throw({error, Reason})	
 			end;
-		[SID] ->
-			SQL = "SELECT * FROM consumption WHERE serialID='"++SID++"' ORDER BY timestamp DESC LIMIT 0,120",
+		{SID, Length} ->
+			SQL = "SELECT * FROM consumption WHERE serialID='"++SID++"' ORDER BY timestamp DESC LIMIT 0,"++integer_to_list(Length),
 			try (odbc_unit:input([SQL])) of
 				{ok, Answer} ->
 					{ok, Answer}
