@@ -40,7 +40,7 @@ worker(SID, Length) ->
 						 end) 
 				end,
 			Status = [Bool_to_int(N) || N <- Status_bools],
-			controller ! {send,{SID, string:join(Status, ";")}}
+			controller ! {send,{SID, lists:reverse(string:join(Status, ";"))}}
 	catch 
 		{error,_} ->
 			io:fwrite("Error when sending to SQL_builder\n");
