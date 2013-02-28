@@ -77,9 +77,8 @@ send(SID, Status) ->
 			case gen_tcp:send(Socket, SID++":"++Status) of
 				ok ->
 					io:fwrite("Sent\n");
-				{error, Reason} ->
-					%% @todo Write error message instead of throwing an error.
-					throw({error, Reason})
+				{error, _} ->
+					io:fwrite("Could not send to: "++SID++"\n")
 			end;
 		{not_found} ->  
 			io:fwrite("Socket not found \n")
