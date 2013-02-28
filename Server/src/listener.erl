@@ -77,6 +77,8 @@ receiver(Socket) ->
 			Output = string:tokens(Package, ":"),
 			case Output of
 				[SID,Data,Status] ->
+					io:fwrite(Output),
+					io:fwrite("\n"),
 					controller ! {new,{SID,Socket}},
 					try (sql_builder:input([SID,string:tokens(Data, ";"),string:tokens(Status, ";")])) of
 						{ok, _} ->
