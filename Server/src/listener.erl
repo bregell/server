@@ -58,7 +58,7 @@ listener(Msg, Listen) ->
 			io:fwrite("Could not accept "),
 			io:fwrite(Reason),
 			io:fwrite("\n"),
-			Msg ! new_worker
+			Msg ! new_listener
 	end.
 
 %% @doc
@@ -70,6 +70,7 @@ listener(Msg, Listen) ->
 %% Socket = socket()
 receiver(Socket) ->
 	io:fwrite("Waiting for package\n"),
+	%% @todo Add some good timeout value maybe.
 	case gen_tcp:recv(Socket, 0) of
 		{ok, Package} ->
 			io:fwrite("Recieve OK\n"),
