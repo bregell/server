@@ -40,7 +40,7 @@ start(Adress, Input) ->
 %% Port = inet:portnumber()
 %% Input = string()
 start(Address, Port, Input) ->
-	case gen_tcp:connect(Address, Port, [binary, {active, false}, {packet, 0}]) of
+	case gen_tcp:connect(Address, Port, [list, {active, false}, {packet, 0}]) of
 		{ok, Socket} ->
 			Units = string:tokens(Input, ":"),
 			spawn_link(?MODULE, receiver, [Socket]),
