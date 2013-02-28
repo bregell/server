@@ -77,7 +77,7 @@ receiver(Socket) ->
 			Output = string:tokens(Package, ":"),
 			case Output of
 				[SID,Data,Status] ->
-					io:fwrite(Output),
+					io:fwrite(Package),
 					io:fwrite("\n"),
 					controller ! {new,{SID,Socket}},
 					try (sql_builder:input([SID,string:tokens(Data, ";"),string:tokens(Status, ";")])) of
@@ -96,7 +96,7 @@ receiver(Socket) ->
 					controller ! {send,{SID, Status}};
 				_ ->
 					io:fwrite("Error no matching case, tcp packet thrown away.\n"),
-					io:fwrite(Output),
+					io:fwrite(Package),
 					io:fwrite("\n")
 			end,
 			receiver(Socket);
