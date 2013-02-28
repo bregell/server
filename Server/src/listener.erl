@@ -30,7 +30,7 @@ start(Port)->
 %% @spec (Port) -> (pid() | string()) 
 %% Port = inet:portnumber()
 server(Port) ->
-	case gen_tcp:listen(Port, [binary, {active, false}, {packet, 0}]) of
+	case gen_tcp:listen(Port, [list, {active, false}, {packet, 0}]) of
 		{ok, Listen} ->
 			spawn_link(?MODULE, listener, [self(), Listen]),
 			loop(Listen);
@@ -72,8 +72,7 @@ receiver(Socket) ->
 	io:fwrite("Waiting for package\n"),
 	%% @todo Add some good timeout value maybe.
 	case gen_tcp:recv(Socket, 0) of
-		{ok, Package_binary} ->
-			Package = binary_to_list(Package_binary),
+		{ok, Package} ->
 			io:fwrite("Recieve OK\n"),
 			%% Parse string into list 
 			Output = string:tokens(Package, ":"),

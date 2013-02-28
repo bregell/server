@@ -82,8 +82,7 @@ send(Msg, Socket, Units) ->
 %% Socket = socket()
 receiver(Socket) ->
 	case gen_tcp:recv(Socket, 0) of
-		{ok, Packet_binary} ->
-			Packet = binary_to_list(Packet_binary),
+		{ok, Packet} ->
 			io:fwrite("Received: "),
 			io:fwrite(Packet),
 			io:fwrite("\n"),
