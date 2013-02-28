@@ -93,7 +93,9 @@ receiver(Socket) ->
 				[SID,Status] ->
 					controller ! {send,{SID, Status}};
 				_ ->
-					io:fwrite("Error no matching case, tcp packet thrown away.\n")
+					io:fwrite("Error no matching case, tcp packet thrown away.\n"),
+					io:fwrite(Output),
+					io:fwrite("\n")
 			end,
 			receiver(Socket);
 		{error, Reason} ->
