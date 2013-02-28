@@ -81,7 +81,7 @@ send(SID, Status) ->
 									   integer_to_list(A)
 							   end
 					 end,
-			Data = [Format(N) || N <- SID++":"++Status ],
+			Data = list_to_integer(lists:flatten([Format(N) || N <- SID++":"++Status ])),
 			io:fwrite("Found\n"),
 			case gen_tcp:send(Socket, Data) of
 				ok ->
