@@ -73,11 +73,11 @@ send(SID, Status) ->
 	input ! {get_socket, {SID, self()}},
 	receive 
 		{found, Socket} ->
-
 			io:fwrite("Found\n"),
 			case gen_tcp:send(Socket, SID++":"++Status) of
 				ok ->
-					io:fwrite("Sent\n");
+					io:fwrite("Sent: "),
+					io:fwrite(SID++":"++Status);
 				{error, _} ->
 					io:fwrite("Could not send to: "++SID++"\n")
 			end;
