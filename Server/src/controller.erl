@@ -78,6 +78,7 @@ send(SID, Status) ->
 				ok ->
 					io:fwrite("Sent\n");
 				{error, Reason} ->
+					%% @todo Write error message instead of throwing an error.
 					throw({error, Reason})
 			end;
 		{not_found} ->  

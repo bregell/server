@@ -1,7 +1,8 @@
 %% @author Johan 
 %% @doc Takes input from the listener and asks the 
 %% database for the history of that unit.
-
+%% @todo EDoc comment the module.
+%% @todo Something is wrong and it throws an error somewhere.
 
 -module(analyzer).
 
