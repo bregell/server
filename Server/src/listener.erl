@@ -72,7 +72,8 @@ receiver(Socket) ->
 	io:fwrite("Waiting for package\n"),
 	%% @todo Add some good timeout value maybe.
 	case gen_tcp:recv(Socket, 0) of
-		{ok, Package} ->
+		{ok, Package_binary} ->
+			Package = binary_to_list(Package_binary),
 			io:fwrite("Recieve OK\n"),
 			%% Parse string into list 
 			Output = string:tokens(Package, ":"),

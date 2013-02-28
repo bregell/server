@@ -40,7 +40,7 @@ start(Adress, Input) ->
 %% Port = inet:portnumber()
 %% Input = string()
 start(Address, Port, Input) ->
-	case gen_tcp:connect(Address, Port, [list, {active, false}, {packet, 0}]) of
+	case gen_tcp:connect(Address, Port, [binary, {active, false}, {packet, 0}]) of
 		{ok, Socket} ->
 			Units = string:tokens(Input, ":"),
 			spawn_link(?MODULE, receiver, [Socket]),
@@ -82,7 +82,8 @@ send(Msg, Socket, Units) ->
 %% Socket = socket()
 receiver(Socket) ->
 	case gen_tcp:recv(Socket, 0) of
-		{ok, Packet} ->
+		{ok, Packet_binary} ->
+			Packet = binary_to_list(Packet_binary),
 			io:fwrite("Received: "),
 			io:fwrite(Packet),
 			io:fwrite("\n"),
@@ -102,6 +103,7 @@ receiver(Socket) ->
 worker(Socket, Units) -> 
 	receive
 		start ->
+			%% @todo Add chech to see if Socket is closed and if it is reconnect.
 			spawn_link(?MODULE, send, [self(), Socket, Units]);
 		_ ->
 			io:fwrite("Bad Msg \n")
