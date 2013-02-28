@@ -8,7 +8,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/0, worker/2, split/3, analyzer/2]).
+-export([start/0, worker/2, split/3, analyzer/1]).
 
 
 
@@ -21,15 +21,25 @@ start() ->
 mailbox() ->
 	receive
 		{read, SID} ->
-			spawn_link(?MODULE, worker, [SID, 960])
+			spawn_link(?MODULE, worker, [SID, 24])
 	end,
 	mailbox().
 
 worker(SID, Length) ->
 	try sql_builder:input({SID, Length}) of
 		{ok,[Answer]} ->
-			Status = analyzer(Answer, Length),
-			controller ! {send,{SID, Status}}
+			Status_bools = analyzer(Answer),
+			Bool_to_int = 
+				fun(A) 
+					 -> (case A of
+							 true ->
+								 "1";
+							 false ->
+								 "0"
+						 end) 
+				end,
+			Status = [Bool_to_int(N) || N <- Status_bools],
+			controller ! {send,{SID, string:join(Status, ";")}}
 	catch 
 		{error,_} ->
 			io:fwrite("Error when sending to SQL_builder\n");
@@ -38,10 +48,10 @@ worker(SID, Length) ->
 	end.
 
 
-analyzer(Answer, Length) ->
+analyzer(Answer) ->
 	{selected,_,Data} = Answer,
-	[Sorted] = split(lists:keysort(2,Data), [], Length),
-	Function = fun(B) -> B >= 5 end,
+	[Sorted] = split(lists:keysort(2,Data), [], length(Data)),
+	Function = fun(B) -> B >= 200 end,
 	[lists:member(true, [Function(Y) || {_,_,_,Y} <- N]) || N <- Sorted].
 
 split(List, [], Length) when length(List) < Length div 4 ->

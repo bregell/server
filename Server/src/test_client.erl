@@ -63,7 +63,7 @@ send(Msg, Socket, Units) ->
 	timer:sleep(timer:seconds(10)),
 	Msg ! start,
 	random:seed(now()),
-	Data = [random:uniform(500), random:uniform(500), random:uniform(500), random:uniform(500)],
+	Data = [random:uniform(199), random:uniform(500), random:uniform(500), random:uniform(500)],
 	Convert = fun(A) -> lists:map(fun(B) -> integer_to_list(B) end, A) end,
 	Packet = fun(A) -> A++":"++string:join(Convert(Data), ";")++":1;1;1;1" end,
 	case lists:foreach(fun(A) -> gen_tcp:send(Socket, Packet(A)) end, Units) of
@@ -85,11 +85,11 @@ receiver(Socket) ->
 		{ok, Packet} ->
 			io:fwrite("Received: "),
 			io:fwrite(Packet),
-			io:fwrite("\n");
+			io:fwrite("\n"),
+			receiver(Socket);
 		{error, _} ->
 			io:fwrite("Could not receive\n")
-	end,
-	receiver(Socket).
+	end.
 		
 
 %% @doc
