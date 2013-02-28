@@ -73,8 +73,17 @@ send(SID, Status) ->
 	input ! {get_socket, {SID, self()}},
 	receive 
 		{found, Socket} ->
+			Format = fun(A) ->
+							 case A of
+								 N when N < 100 -> 
+									   "0"++integer_to_list(A);
+								 D when D >= 100 ->
+									   integer_to_list(A)
+							   end
+					 end,
+			Data = [Format(N) || N <- SID++":"++Status ],
 			io:fwrite("Found\n"),
-			case gen_tcp:send(Socket, SID++":"++Status) of
+			case gen_tcp:send(Socket, Data) of
 				ok ->
 					io:fwrite("Sent\n");
 				{error, _} ->
