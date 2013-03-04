@@ -31,7 +31,6 @@ input(Sql) ->
 							 {error, Reason} ->
 								{error, Reason}
 						 end) end,
-	%%lists:foreach(Function, Sql),
 	Return = [Function(N) || N <- Sql],
 	odbc:disconnect(Conn),
 	{ok, Return}.
