@@ -81,6 +81,7 @@ receiver(Socket) ->
 					io:fwrite(Package),
 					io:fwrite("\n"),
 					controller ! {new,{SID,Socket}},
+					%% @issue Maybe cange this to some kind of message passing solution.
 					try (sql_builder:input([SID,string:tokens(Data, ";"),string:tokens(Status, ";")])) of
 						{ok, _} ->
 							io:fwrite("Data sent without problems!\n")
