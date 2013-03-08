@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/0,input/1,select/6,update/4]).
+-export([start/0,input/1,select/6,update/4,insert/4]).
 
 
 
@@ -45,6 +45,9 @@ input(Input) ->
 					throw({error, Reason})
 			end
 	end.
+insert(Pid, Table, Columns, Values)->
+	SQL = "INSERT INTO "++Table++" ("++Columns++") VALUES "++Values,
+	Pid ! {result, SQL}.
 
 select(Pid, Columns, Tables, Wheres, Order, Limit)->
 	SQL = ("SELECT ("++Columns++") FROM "++Tables++" WHERE "++Wheres++"' ORDER BY "++Order++" LIMIT "++Limit),
@@ -56,6 +59,8 @@ update(Pid, Tables, Sets, Wheres)->
 
 mailbox() ->
 	receive
+		{insert, Pid, {SID, Data, Status}} ->
+			spawn_link(?MODULE, input, [Pid, SID, Data, Status]);
 		{select, Pid, {Columns, Tables, Wheres, Order, Limit}} ->
 			spawn_link(?MODULE, select, [Pid, Columns, Tables, Wheres, Order, Limit]);
 		{update, Pid, {Tables, Sets, Wheres}} ->
