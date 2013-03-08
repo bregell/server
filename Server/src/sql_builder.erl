@@ -7,13 +7,16 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([input/1]).
+-export([start/0,input/1,select/6,update/4]).
 
 
 
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
+
+start()->
+	mailbox().
 
 %% @doc 
 %% Takes a preformatted input in the form of a list and converts it to SQL Strings.
@@ -42,6 +45,24 @@ input(Input) ->
 					throw({error, Reason})
 			end
 	end.
+
+select(Pid, Columns, Tables, Wheres, Order, Limit)->
+	SQL = ("SELECT ("++Columns++") FROM "++Tables++" WHERE "++Wheres++"' ORDER BY "++Order++" LIMIT "++Limit),
+	Pid ! {result, SQL}.
+
+update(Pid, Tables, Sets, Wheres)->
+	SQL = ("UPDATE "++Tables++" SET "++Sets++" WHERE "++lists:flatten([N++" AND " || N <- Wheres, N /= lists:last(Wheres)])++lists:last(Wheres)),
+	Pid ! {result, SQL}.
+
+mailbox() ->
+	receive
+		{select, Pid, {Columns, Tables, Wheres, Order, Limit}} ->
+			spawn_link(?MODULE, select, [Pid, Columns, Tables, Wheres, Order, Limit]);
+		{update, Pid, {Tables, Sets, Wheres}} ->
+			spawn_link(?MODULE, update, [Pid, Tables, Sets, Wheres])
+	end,
+	mailbox().
+		
 
 %% @doc
 %% This function is called when the input is new data to be put into the table.
