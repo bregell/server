@@ -50,7 +50,7 @@ input(Input) ->
 					FROM \"powerStrip_consumption\"
 					WHERE \"powerStrip_id\"='"++SID++"' 
 					ORDER BY \"timeStamp\" DESC 
-					LIMIT "++integer_to_list(Length),
+					LIMIT "++integer_to_list(Length)],
 			try (odbc_unit:input(SQL)) of
 				{ok, Answer} ->
 					{ok, Answer}
