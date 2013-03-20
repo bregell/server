@@ -21,7 +21,7 @@
 %% @spec (Sql) -> ({ok,[tuple()]} | {error, Reason})
 %% Sql = [string()]
 input(Sql) ->
-	{ok, Conn} = odbc:connect("DSN=DB", []),
+	{ok, Conn} = odbc:connect("DSN=PostgreSQL30", []),
 	Function = fun(A) -> (try (odbc:sql_query(Conn, A)) of
 							 {updated, N} ->
 								{updated, N};
