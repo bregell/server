@@ -27,7 +27,15 @@ start()->
 input(Input) ->	
 	case Input of
 		[SID, Data, Status] ->
-			SQL = lists:append(catch(new_data(SID, Data)),catch(new_status(SID, Status))),
+			%% Get the real PowerStrip_Id from the database
+			SQL = "SELECT id FROM \"powerStrip_powerstrip\" WHERE \"serialId\"="++SID,
+			{ok, Answer} = odbc_unit:input(SQL),
+			[{_,_,[{PowerStrip_Id}]}] = Answer,
+			
+			%% Build SQL string
+			SQL = lists:append(catch(new_data(PowerStrip_Id, Data)),catch(new_status(PowerStrip_Id, Status))),
+			
+			%% Send SQL to ODBC
 			try (odbc_unit:input(SQL)) of
 				{ok, Answer} ->
 					{ok, Answer}
@@ -35,6 +43,7 @@ input(Input) ->
 				{error, Reason} ->
 					throw({error, Reason})	
 			end;
+
 		{SID, Length} ->
 			%%SELECT id, socket_id, "powerStrip_id", "activePower", "timeStamp" FROM "powerStrip_consumption";
 			SQL = ("SELECT (\"powerStrip_id\", socket_id, \"timeStamp\", \"activePower\") FROM \"powerStrip_consumption\" WHERE \"powerStrip_id\"='"++SID++"' ORDER BY \"timeStamp\" DESC LIMIT 0,"++integer_to_list(Length)),
@@ -77,12 +86,7 @@ mailbox() ->
 %% @spec (SID, Data) -> [string()]
 %% SID = string()
 %% Data = [string()]
-new_data(SID, Data) ->
-	%% Get the real PowerStrip_Id from the database
-	SQL = "SELECT id FROM \"powerStrip_powerstrip\" WHERE \"serialId\"="++SID,
-	{ok, Answer} = odbc_unit:input(SQL),
-	[{_,_,[{PowerStrip_Id}]}] = Answer,
-	
+new_data(PowerStrip_Id, Data) ->
 	%% Get Id tags for each socket
 	SQL = "SELECT id FROM \"powerStrip_socket\" WHERE \"powerStrip_id\"="++PowerStrip_Id,
 	{ok, Answer} = odbc_unit:input(SQL),
@@ -90,10 +94,10 @@ new_data(SID, Data) ->
 	Id = [integer_to_list(N) || {N} <- Socket_Id],
 	%%Id = ["1", "2", "3", "4"],
 	
-	%% A = SID, B = Data, C = Ports
+	%% A = Data, D = ActivePower
 	%% (SID, Data[n], Status[n], NOW())
 	%% Makes the Value fields for the SQL string
-	Combine = fun(A) -> lists:map(fun(D) -> "('"++SID++"','"++D++"',NOW())" end, lists:zipwith(fun(X, Y) -> X++"','"++Y end, A, Id)) end,
+	Combine = fun(A) -> lists:map(fun(D) -> "('"++PowerStrip_Id++"','"++D++"',NOW())" end, lists:zipwith(fun(X, Y) -> X++"','"++Y end, A, Id)) end,
 	
 	%% From List to String
 	Values = string:join(Combine(Data), ","),
@@ -108,11 +112,11 @@ new_data(SID, Data) ->
 %% @spec (SID, Status) -> [string()]
 %% SID = string()
 %% Status = [string()]
-new_status(SID, Status) ->
+new_status(PowerStrip_Id, Status) ->
 	%% List of Id tags for each socket
 	Id = ["1", "2", "3", "4"],
 	
 	%% Makes a list of UPDATE statements for the given SID
     %% UPDATE "powerStrip_socket" SET id=?, socket=?, "powerStrip_id"=?, status=?, name=? WHERE <condition>;
-	Make = fun(B) -> lists:map(fun({C,D}) -> "UPDATE \"powerStrip_socket\" SET status="++D++" WHERE \"powerStrip_id\"='"++SID++"' AND socket='"++C++"'" end, lists:zip(Id, B)) end,
+	Make = fun(B) -> lists:map(fun({C,D}) -> "UPDATE \"powerStrip_socket\" SET status="++D++" WHERE \"powerStrip_id\"='"++PowerStrip_Id++"' AND socket='"++C++"'" end, lists:zip(Id, B)) end,
 	Make(Status).
