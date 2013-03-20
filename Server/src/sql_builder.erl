@@ -45,13 +45,19 @@ input(Input) ->
 			end;
 
 		{SID, Length} ->
+			%% Get the real PowerStrip_Id from the database
+			SQL_1 = ["SELECT id FROM \"powerStrip_powerstrip\" WHERE \"serialId\"='"++SID++"'"],
+			{ok, Answer_1} = odbc_unit:input(SQL_1),
+			[{selected,_,[{Result}]}] = Answer_1,
+			PowerStrip_Id = integer_to_list(Result),
+			
 			%%SELECT id, socket_id, "powerStrip_id", "activePower", "timeStamp" FROM "powerStrip_consumption";
-			SQL = ["SELECT \"powerStrip_id\", socket_id, \"timeStamp\", \"activePower\" 
+			SQL_2 = ["SELECT \"powerStrip_id\", socket_id, \"timeStamp\", \"activePower\" 
 					FROM \"powerStrip_consumption\"
-					WHERE \"powerStrip_id\"='"++SID++"' 
+					WHERE \"powerStrip_id\"='"++PowerStrip_Id++"' 
 					ORDER BY \"timeStamp\" DESC 
 					LIMIT "++integer_to_list(Length)],
-			try (odbc_unit:input(SQL)) of
+			try (odbc_unit:input(SQL_2)) of
 				{ok, Answer} ->
 					{ok, Answer}
 			catch	
