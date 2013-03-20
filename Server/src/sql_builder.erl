@@ -91,7 +91,7 @@ new_data(SID, Data) ->
 	
 	%% INSERT INTO consumption (serialId, id, activepower, timestamp) VALUES [(SID, Data[n], Status[n], NOW())]
 	%% Adds the SQL syntax
-	["INSERT INTO \"owerStrip_consumption\" (\"powerStrip_id\", \"activePower\", socket_id, \"timeStamp\") VALUES "++Values].
+	["INSERT INTO \"powerStrip_consumption\" (\"powerStrip_id\", \"activePower\", socket_id, \"timeStamp\") VALUES "++Values].
 
 %% @doc
 %% This function is called when the input is new statuses for the unit. 
