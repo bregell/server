@@ -46,8 +46,12 @@ input(Input) ->
 
 		{SID, Length} ->
 			%%SELECT id, socket_id, "powerStrip_id", "activePower", "timeStamp" FROM "powerStrip_consumption";
-			SQL = ("SELECT (\"powerStrip_id\", socket_id, \"timeStamp\", \"activePower\") FROM \"powerStrip_consumption\" WHERE \"powerStrip_id\"='"++SID++"' ORDER BY \"timeStamp\" DESC LIMIT 0,"++integer_to_list(Length)),
-			try (odbc_unit:input([SQL])) of
+			SQL = ["SELECT \"powerStrip_id\", socket_id, \"timeStamp\", \"activePower\" 
+					FROM \"powerStrip_consumption\"
+					WHERE \"powerStrip_id\"='"++SID++"' 
+					ORDER BY \"timeStamp\" DESC 
+					LIMIT "++integer_to_list(Length),
+			try (odbc_unit:input(SQL)) of
 				{ok, Answer} ->
 					{ok, Answer}
 			catch	
