@@ -28,16 +28,15 @@ input(Input) ->
 	case Input of
 		[SID, Data, Status] ->
 			%% Get the real PowerStrip_Id from the database
-			SQL = ["SELECT id FROM \"powerStrip_powerstrip\" WHERE \"serialId\"='"++SID++"'"],
-			{ok, Answer} = odbc_unit:input(SQL),
-			[{_,_,[{Result}]}] = Answer,
+			SQL_1 = ["SELECT id FROM \"powerStrip_powerstrip\" WHERE \"serialId\"='"++SID++"'"],
+			{ok, Answer_1} = odbc_unit:input(SQL_1),
+			[{selected,_,[{Result}]}] = Answer_1,
 			PowerStrip_Id = integer_to_list(Result),
 	
 			%% Build SQL string
-			SQL = lists:append(catch(new_data(PowerStrip_Id, Data)),catch(new_status(PowerStrip_Id, Status))),
-			
+			SQL_2 = lists:append(catch(new_data(PowerStrip_Id, Data)),catch(new_status(PowerStrip_Id, Status))),
 			%% Send SQL to ODBC
-			try (odbc_unit:input(SQL)) of
+			try (odbc_unit:input(SQL_2)) of
 				{ok, Answer} ->
 					{ok, Answer}
 			catch
