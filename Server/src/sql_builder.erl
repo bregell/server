@@ -78,8 +78,17 @@ mailbox() ->
 %% SID = string()
 %% Data = [string()]
 new_data(SID, Data) ->
-	%% List of Id tags for each socket
-	Id = ["1", "2", "3", "4"],
+	%% Get the real PowerStrip_Id from the database
+	SQL = "SELECT id FROM \"powerStrip_powerstrip\" WHERE \"serialId\"="++SID,
+	{ok, Answer} = odbc_unit:input(SQL),
+	[{_,_,[{PowerStrip_Id}]}] = Answer,
+	
+	%% Get Id tags for each socket
+	SQL = "SELECT id FROM \"powerStrip_socket\" WHERE \"powerStrip_id\"="++PowerStrip_Id,
+	{ok, Answer} = odbc_unit:input(SQL),
+	[{_,_,Socket_Id}] = Answer,
+	Id = [integer_to_list(N) || {N} <- Socket_Id],
+	%%Id = ["1", "2", "3", "4"],
 	
 	%% A = SID, B = Data, C = Ports
 	%% (SID, Data[n], Status[n], NOW())
