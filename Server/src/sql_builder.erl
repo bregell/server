@@ -36,7 +36,7 @@ input(Input) ->
 					throw({error, Reason})	
 			end;
 		{SID, Length} ->
-			SQL = ("SELECT (powerStrip_id, socket_id, timeStamp, activePower) FROM powerstrip_consumption WHERE powerStrip_id='"++SID++"' ORDER BY timestamp DESC LIMIT 0,"++integer_to_list(Length)),
+			SQL = ("SELECT (powerStrip_id, socket_id, timeStamp, activePower) FROM powerStrip_consumption WHERE powerStrip_id='"++SID++"' ORDER BY timeStamp DESC LIMIT 0,"++integer_to_list(Length)),
 			try (odbc_unit:input([SQL])) of
 				{ok, Answer} ->
 					{ok, Answer}
