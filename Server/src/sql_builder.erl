@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/0,input/1,select/6,update/4,insert/4]).
+-export([start/0,input/1,select/6,update/4,insert/4,new_status/2,new_data/2]).
 
 
 
@@ -88,7 +88,7 @@ mailbox() ->
 %% Data = [string()]
 new_data(PowerStrip_Id, Data) ->
 	%% Get Id tags for each socket
-	SQL = "SELECT id FROM \"powerStrip_socket\" WHERE \"powerStrip_id\"="++PowerStrip_Id,
+	SQL = ["SELECT id FROM \"powerStrip_socket\" WHERE \"powerStrip_id\"="++PowerStrip_Id],
 	{ok, Answer} = odbc_unit:input(SQL),
 	[{_,_,Socket_Id}] = Answer,
 	Id = [integer_to_list(N) || {N} <- Socket_Id],
