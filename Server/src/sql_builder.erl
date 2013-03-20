@@ -28,7 +28,7 @@ input(Input) ->
 	case Input of
 		[SID, Data, Status] ->
 			%% Get the real PowerStrip_Id from the database
-			SQL = "SELECT id FROM \"powerStrip_powerstrip\" WHERE \"serialId\"="++SID,
+			SQL = ["SELECT id FROM \"powerStrip_powerstrip\" WHERE \"serialId\"="++SID],
 			{ok, Answer} = odbc_unit:input(SQL),
 			[{_,_,[{PowerStrip_Id}]}] = Answer,
 			
