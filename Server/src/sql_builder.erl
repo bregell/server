@@ -36,7 +36,7 @@ input(Input) ->
 					throw({error, Reason})	
 			end;
 		{SID, Length} ->
-			SQL = ("SELECT (powerStrip_id, socket_id, timestamp, activePower) FROM powerstrip_consumption WHERE powerStrip_id='"++SID++"' ORDER BY timestamp DESC LIMIT 0,"++integer_to_list(Length)),
+			SQL = ("SELECT (powerStrip_id, socket_id, timeStamp, activePower) FROM powerstrip_consumption WHERE powerStrip_id='"++SID++"' ORDER BY timestamp DESC LIMIT 0,"++integer_to_list(Length)),
 			try (odbc_unit:input([SQL])) of
 				{ok, Answer} ->
 					{ok, Answer}
@@ -45,6 +45,7 @@ input(Input) ->
 					throw({error, Reason})
 			end
 	end.
+
 insert(Pid, Table, Columns, Values)->
 	SQL = "INSERT INTO "++Table++" ("++Columns++") VALUES "++Values,
 	Pid ! {result, SQL}.
@@ -89,7 +90,7 @@ new_data(SID, Data) ->
 	
 	%% INSERT INTO consumption (serialId, id, activepower, timestamp) VALUES [(SID, Data[n], Status[n], NOW())]
 	%% Adds the SQL syntax
-	["INSERT INTO powerstrip_consumption (powerStrip_id, activePower, socket_id, timestamp) VALUES "++Values].
+	["INSERT INTO powerStrip_consumption (powerStrip_id, activePower, socket_id, timeStamp) VALUES "++Values].
 
 %% @doc
 %% This function is called when the input is new statuses for the unit. 
@@ -102,5 +103,5 @@ new_status(SID, Status) ->
 	Id = ["1", "2", "3", "4"],
 	
 	%% Makes a list of UPDATE statements for the given SID
-	Make = fun(B) -> lists:map(fun({C,D}) -> "UPDATE powerstrip_socket SET status="++D++" WHERE powerStrip_id='"++SID++"' AND socket='"++C++"'" end, lists:zip(Id, B)) end,
+	Make = fun(B) -> lists:map(fun({C,D}) -> "UPDATE powerStrip_socket SET status="++D++" WHERE powerStrip_id='"++SID++"' AND socket='"++C++"'" end, lists:zip(Id, B)) end,
 	Make(Status).
