@@ -30,8 +30,9 @@ input(Input) ->
 			%% Get the real PowerStrip_Id from the database
 			SQL = ["SELECT id FROM \"powerStrip_powerstrip\" WHERE \"serialId\"='"++SID++"'"],
 			{ok, Answer} = odbc_unit:input(SQL),
-			[{_,_,[{PowerStrip_Id}]}] = Answer,
-			
+			[{_,_,[{Result}]}] = Answer,
+			PowerStrip_Id = integer_to_list(Result),
+	
 			%% Build SQL string
 			SQL = lists:append(catch(new_data(PowerStrip_Id, Data)),catch(new_status(PowerStrip_Id, Status))),
 			
