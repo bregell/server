@@ -30,7 +30,7 @@ worker(PowerStrip_SerialId, Length) ->
 	try sql_builder:input({PowerStrip_SerialId, Length}) of
 		{ok,[Answer]} ->
 			{ok,[{selected,_,Status_data}]} = sql_builder:get_status(PowerStrip_SerialId),
-			Status_now = [N || {N} <- Status_data],
+			Status_now = [integer_to_list(N) || {N} <- Status_data],
 			Status_bools = analyzer(Answer),
 			Bool_to_int = 
 				fun(A) 
@@ -42,7 +42,7 @@ worker(PowerStrip_SerialId, Length) ->
 						 end) 
 				end,
 			Status_calc = [Bool_to_int(N) || N <- Status_bools],
-			Status_out = [if X==Y -> "D"; true -> X end || X <- Status_calc, Y <- Status_now],
+			Status_out = [if X==Y -> "D"; true -> X end || {X,Y} <- lists:zip(Status_calc, Status_now)],
 			controller ! {send,{PowerStrip_SerialId, lists:reverse(string:join(Status_out, ";"))}}
 	catch 
 		{error,_} ->
