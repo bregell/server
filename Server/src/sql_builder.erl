@@ -28,9 +28,9 @@ input(Input) ->
 	case Input of
 		[PowerStrip_SerialId, Data, Status] ->
 			%% Build SQL string
-			SQL_2 = lists:append(catch(new_data(PowerStrip_SerialId, Data)),catch(new_status(PowerStrip_SerialId, Status))),
+			Sql = lists:append(catch(new_data(PowerStrip_SerialId, Data)),catch(new_status(PowerStrip_SerialId, Status))),
 			%% Send SQL to ODBC
-			try (odbc_unit:input(SQL_2)) of
+			try (odbc_unit:input(Sql)) of
 				{ok, Answer} ->
 					{ok, Answer}
 			catch
@@ -39,19 +39,14 @@ input(Input) ->
 			end;
 
 		{PowerStrip_SerialId, Length} ->
-			%% Get the real PowerStrip_Id from the database
-			SQL_1 = ["SELECT id FROM \"powerStrip_powerstrip\" WHERE \"serialId\"='"++PowerStrip_SerialId++"'"],
-			{ok, Answer_1} = odbc_unit:input(SQL_1),
-			[{selected,_,[{Result}]}] = Answer_1,
-			PowerStrip_Id = integer_to_list(Result),
-			
 			%%SELECT id, socket_id, "powerStrip_id", "activePower", "timeStamp" FROM "powerStrip_consumption";
-			SQL_2 = ["SELECT \"powerStrip_id\", socket_id, \"timeStamp\", \"activePower\" 
-					FROM \"powerStrip_consumption\"
-					WHERE \"powerStrip_id\"='"++PowerStrip_Id++"' 
+			Sql = ["SELECT \"powerStrip_id\", socket_id, \"timeStamp\", \"activePower\" 
+					FROM \"powerStrip_consumption\", \"powerStrip_powerstrip\"
+					WHERE \"powerStrip_consumption\".\"powerStrip_id\"=\"powerStrip_powerstrip\".\"id\"
+					AND \"powerStrip_powerstrip\".\"serialId\"='"++PowerStrip_SerialId++"' 
 					ORDER BY \"timeStamp\" DESC 
 					LIMIT "++integer_to_list(Length)],
-			try (odbc_unit:input(SQL_2)) of
+			try (odbc_unit:input(Sql)) of
 				{ok, Answer} ->
 					{ok, Answer}
 			catch	
