@@ -23,10 +23,12 @@
 input(Sql) ->
 	{ok, Conn} = odbc:connect("DSN=PostgreSQL30", []),
 	Function = fun(A) -> (try (odbc:sql_query(Conn, A)) of
-							 {updated, N} ->
+							  {updated, N} ->
 								{updated, N};
-							 {selected, C, R} ->
-								{selected, C, R}
+							  {selected, C, R} ->
+								{selected, C, R};
+							  {error, Reason} ->
+								{error, Reason}
 						 catch 
 							 {error, Reason} ->
 								{error, Reason}
