@@ -21,14 +21,16 @@ start() ->
 
 mailbox() ->
 	receive
-		{read, SID} ->
-			spawn_link(?MODULE, worker, [SID, 24])
+		{read, PowerStrip_SerialId} ->
+			spawn_link(?MODULE, worker, [PowerStrip_SerialId, 24])
 	end,
 	mailbox().
 
-worker(SID, Length) ->
-	try sql_builder:input({SID, Length}) of
+worker(PowerStrip_SerialId, Length) ->
+	try sql_builder:input({PowerStrip_SerialId, Length}) of
 		{ok,[Answer]} ->
+			{ok,[{selected,_,Status_data}]} = sql_builder:get_status(PowerStrip_SerialId),
+			Status_now = [N || {N} <- Status_data],
 			Status_bools = analyzer(Answer),
 			Bool_to_int = 
 				fun(A) 
@@ -39,8 +41,9 @@ worker(SID, Length) ->
 								 "0"
 						 end) 
 				end,
-			Status = [Bool_to_int(N) || N <- Status_bools],
-			controller ! {send,{SID, lists:reverse(string:join(Status, ";"))}}
+			Status_calc = [Bool_to_int(N) || N <- Status_bools],
+			Status_out = [if X==Y -> "D"; true -> X end || X <- Status_calc, Y <- Status_now],
+			controller ! {send,{PowerStrip_SerialId, lists:reverse(string:join(Status_out, ";"))}}
 	catch 
 		{error,_} ->
 			io:fwrite("Error when sending to SQL_builder\n");
