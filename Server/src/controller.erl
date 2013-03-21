@@ -31,17 +31,17 @@ start() ->
 %% @todo Implement this in mnesia or orddict
 input(Data) ->
 	receive
-		{new, {SID,Socket}} ->
-			case lists:keymember(SID, 1, Data)of
+		{new, {PowerStrip_SerialId,Socket}} ->
+			case lists:keymember(PowerStrip_SerialId, 1, Data)of
 				true ->
-					New_Data = lists:keyreplace(SID, 1, Data, {SID, Socket});
+					New_Data = lists:keyreplace(PowerStrip_SerialId, 1, Data, {PowerStrip_SerialId, Socket});
 				false ->
-					New_Data = lists:append(Data, [{SID, Socket}])
+					New_Data = lists:append(Data, [{PowerStrip_SerialId, Socket}])
 			end;
-		{get_socket, {SID, Pid}} ->
+		{get_socket, {PowerStrip_SerialId, Pid}} ->
 			New_Data = Data,
-			case lists:keyfind(SID, 1, Data) of
-				{SID,Socket} ->
+			case lists:keyfind(PowerStrip_SerialId, 1, Data) of
+				{PowerStrip_SerialId, Socket} ->
 					Pid ! {found, Socket};
 				false ->
 					Pid ! {not_found}
@@ -54,10 +54,10 @@ input(Data) ->
 %% @end
 mailbox() ->
 	receive
-		{new, {SID, Socket}} ->
-			input ! {new, {SID, Socket}};
-		{send, {SID, Status}} ->
-			spawn_link(?MODULE, send, [SID, Status]);
+		{new, {PowerStrip_SerialId, Socket}} ->
+			input ! {new, {PowerStrip_SerialId, Socket}};
+		{send, {PowerStrip_SerialId, Status}} ->
+			spawn_link(?MODULE, send, [PowerStrip_SerialId, Status]);
 		_ ->
 			io:fwrite("Bad Data\n")
 	end,
@@ -69,17 +69,17 @@ mailbox() ->
 %% @spec (SID, Status) -> (string() | {error, Reason})
 %% SID = string()
 %% Status = string()
-send(SID, Status) ->
-	input ! {get_socket, {SID, self()}},
+send(PowerStrip_SerialId, Status) ->
+	input ! {get_socket, {PowerStrip_SerialId, self()}},
 	receive 
 		{found, Socket} ->
 			io:fwrite("Found\n"),
-			case gen_tcp:send(Socket, SID++":"++Status) of
+			case gen_tcp:send(Socket, PowerStrip_SerialId++":"++Status) of
 				ok ->
 					io:fwrite("Sent: "),
-					io:fwrite(SID++":"++Status);
+					io:fwrite(PowerStrip_SerialId++":"++Status++"\n");
 				{error, _} ->
-					io:fwrite("Could not send to: "++SID++"\n")
+					io:fwrite("Could not send to: "++PowerStrip_SerialId++"\n")
 			end;
 		{not_found} ->  
 			io:fwrite("Socket not found \n")
