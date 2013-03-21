@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/0,input/1,select/6,update/4,insert/4,new_status/2,new_data/2]).
+-export([start/0,input/1,select/6,update/4,insert/4,get_status/1]).
 
 
 
@@ -26,9 +26,9 @@ start()->
 %% Answer = ({updated, NRows} | {selected, Cols, Rows})
 input(Input) ->	
 	case Input of
-		[SID, Data, Status] ->
+		[PowerStrip_SerialId, Data, Status] ->
 			%% Get the real PowerStrip_Id from the database
-			SQL_1 = ["SELECT id FROM \"powerStrip_powerstrip\" WHERE \"serialId\"='"++SID++"'"],
+			SQL_1 = ["SELECT id FROM \"powerStrip_powerstrip\" WHERE \"serialId\"='"++PowerStrip_SerialId++"'"],
 			{ok, Answer_1} = odbc_unit:input(SQL_1),
 			[{selected,_,[{Result}]}] = Answer_1,
 			PowerStrip_Id = integer_to_list(Result),
@@ -44,9 +44,9 @@ input(Input) ->
 					throw({error, Reason})	
 			end;
 
-		{SID, Length} ->
+		{PowerStrip_SerialId, Length} ->
 			%% Get the real PowerStrip_Id from the database
-			SQL_1 = ["SELECT id FROM \"powerStrip_powerstrip\" WHERE \"serialId\"='"++SID++"'"],
+			SQL_1 = ["SELECT id FROM \"powerStrip_powerstrip\" WHERE \"serialId\"='"++PowerStrip_SerialId++"'"],
 			{ok, Answer_1} = odbc_unit:input(SQL_1),
 			[{selected,_,[{Result}]}] = Answer_1,
 			PowerStrip_Id = integer_to_list(Result),
@@ -130,3 +130,13 @@ new_status(PowerStrip_Id, Status) ->
     %% UPDATE "powerStrip_socket" SET id=?, socket=?, "powerStrip_id"=?, status=?, name=? WHERE <condition>;
 	Make = fun(B) -> lists:map(fun({C,D}) -> "UPDATE \"powerStrip_socket\" SET status="++D++" WHERE \"powerStrip_id\"='"++PowerStrip_Id++"' AND socket='"++C++"'" end, lists:zip(Id, B)) end,
 	Make(Status).
+
+%% @doc
+%% This function is called when the status of a PowerStrip is needed. 
+%% @end
+get_status(PowerStrip_SerialId) ->
+	Sql = ["SELECT status 
+			FROM \"powerStrip_socket\", \"powerStrip_powerstrip\" 
+			WHERE \"powerStrip_socket\".\"powerStrip_id\"=\"powerStrip_powerstrip\".\"id\"
+			AND \"powerStrip_powerstrip\".\"serialId\"='"++PowerStrip_SerialId++"'"],
+	odbc_unit:input(Sql).
