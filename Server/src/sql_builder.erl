@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/0,input/1,select/6,update/4,insert/4,get_status/1]).
+-export([start/0,input/1,select/6,update/4,insert/4,get_status/1,new_status/2]).
 
 
 
@@ -124,7 +124,7 @@ new_data(PowerStrip_Id, Data) ->
 %% Status = [string()]
 new_status(PowerStrip_Id, Status) ->
 	%% List of Id tags for each socket
-	Id = lists:seq(1, length(Status)),
+	Id = [integer_to_list(N) || N <- lists:seq(1, length(Status))],
 	%% Makes a list of UPDATE statements for the given SID
     %% UPDATE "powerStrip_socket" SET id=?, socket=?, "powerStrip_id"=?, status=?, name=? WHERE <condition>;
 	["UPDATE \"powerStrip_socket\" SET status="++N++" WHERE \"powerStrip_id\"='"++PowerStrip_Id++"' AND socket='"++D++"'" || {N,D} <- lists:zip(Status,Id), N /= "D"].
