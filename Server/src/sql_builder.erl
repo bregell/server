@@ -124,12 +124,11 @@ new_data(PowerStrip_Id, Data) ->
 %% Status = [string()]
 new_status(PowerStrip_Id, Status) ->
 	%% List of Id tags for each socket
-	Id = ["1", "2", "3", "4"],
-	
+	Id = lists:seq(1, length(Status)),
 	%% Makes a list of UPDATE statements for the given SID
     %% UPDATE "powerStrip_socket" SET id=?, socket=?, "powerStrip_id"=?, status=?, name=? WHERE <condition>;
-	Make = fun(B) -> lists:map(fun({C,D}) -> "UPDATE \"powerStrip_socket\" SET status="++D++" WHERE \"powerStrip_id\"='"++PowerStrip_Id++"' AND socket='"++C++"'" end, lists:zip(Id, B)) end,
-	Make(Status).
+	["UPDATE \"powerStrip_socket\" SET status="++N++" WHERE \"powerStrip_id\"='"++PowerStrip_Id++"' AND socket='"++D++"'" || {N,D} <- lists:zip(Status,Id), N /= "D"].
+
 
 %% @doc
 %% This function is called when the status of a PowerStrip is needed. 
