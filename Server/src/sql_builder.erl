@@ -34,14 +34,14 @@ input(Input) ->
 			PowerStrip_Id = integer_to_list(Result),
 	
 			%% Build SQL string
-			SQL_2 = lists:append(catch(new_data(PowerStrip_Id, Data)),catch(new_status(PowerStrip_Id, Status))),
+			SQL_2 = lists:append(catch(new_data(PowerStrip_Id, Data)),catch(new_status(PowerStrip_SerialId, Status))),
 			%% Send SQL to ODBC
 			try (odbc_unit:input(SQL_2)) of
 				{ok, Answer} ->
 					{ok, Answer}
 			catch
 				{error, Reason} ->
-					throw({error, Reason})	
+					{error, Reason}	
 			end;
 
 		{PowerStrip_SerialId, Length} ->
@@ -62,7 +62,7 @@ input(Input) ->
 					{ok, Answer}
 			catch	
 				{error, Reason} ->
-					throw({error, Reason})
+					{error, Reason}
 			end
 	end.
 
@@ -122,12 +122,12 @@ new_data(PowerStrip_Id, Data) ->
 %% @spec (SID, Status) -> [string()]
 %% SID = string()
 %% Status = [string()]
-new_status(PowerStrip_Id, Status) ->
+new_status(PowerStrip_SerialId, Status) ->
 	%% List of Id tags for each socket
 	Id = [integer_to_list(N) || N <- lists:seq(1, length(Status))],
 	%% Makes a list of UPDATE statements for the given SID
     %% UPDATE "powerStrip_socket" SET id=?, socket=?, "powerStrip_id"=?, status=?, name=? WHERE <condition>;
-	["UPDATE \"powerStrip_socket\" SET status="++N++" WHERE \"powerStrip_id\"='"++PowerStrip_Id++"' AND socket='"++D++"'" || {N,D} <- lists:zip(Status,Id), N /= "D"].
+	["UPDATE \"powerStrip_socket\" SET status="++N++" WHERE socket="++D++" AND \"powerStrip_id\" IN (SELECT id FROM \"powerStrip_powerstrip\" WHERE \"serialId\"='"++PowerStrip_SerialId++"')" || {N,D} <- lists:zip(Status,Id), N /= "D"].
 
 
 %% @doc
