@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/0,input/1,select/6,update/4,insert/4,get_status/1,new_status/2]).
+-export([start/0,input/1,select/6,update/4,insert/4,get_status/1,new_status/2,new_data/2]).
 
 
 
@@ -27,14 +27,8 @@ start()->
 input(Input) ->	
 	case Input of
 		[PowerStrip_SerialId, Data, Status] ->
-			%% Get the real PowerStrip_Id from the database
-			SQL_1 = ["SELECT id FROM \"powerStrip_powerstrip\" WHERE \"serialId\"='"++PowerStrip_SerialId++"'"],
-			{ok, Answer_1} = odbc_unit:input(SQL_1),
-			[{selected,_,[{Result}]}] = Answer_1,
-			PowerStrip_Id = integer_to_list(Result),
-	
 			%% Build SQL string
-			SQL_2 = lists:append(catch(new_data(PowerStrip_Id, Data)),catch(new_status(PowerStrip_SerialId, Status))),
+			SQL_2 = lists:append(catch(new_data(PowerStrip_SerialId, Data)),catch(new_status(PowerStrip_SerialId, Status))),
 			%% Send SQL to ODBC
 			try (odbc_unit:input(SQL_2)) of
 				{ok, Answer} ->
@@ -96,18 +90,18 @@ mailbox() ->
 %% @spec (SID, Data) -> [string()]
 %% SID = string()
 %% Data = [string()]
-new_data(PowerStrip_Id, Data) ->
+new_data(PowerStrip_SerialId, Data) ->
 	%% Get Id tags for each socket
-	SQL = ["SELECT id FROM \"powerStrip_socket\" WHERE \"powerStrip_id\"="++PowerStrip_Id],
+	SQL = ["SELECT \"powerStrip_socket\".id, \"powerStrip_powerstrip\".id FROM \"powerStrip_socket\", \"powerStrip_powerstrip\" WHERE \"powerStrip_socket\".\"powerStrip_id\"=\"powerStrip_powerstrip\".id AND \"powerStrip_powerstrip\".\"serialId\" = '"++PowerStrip_SerialId++"'"],
 	{ok, Answer} = odbc_unit:input(SQL),
-	[{_,_,Socket_Id}] = Answer,
-	Id = [integer_to_list(N) || {N} <- Socket_Id],
-	%%Id = ["1", "2", "3", "4"],
+	[{_,_,Answer_List}] = Answer,
+	Id = [integer_to_list(N) || {N,_} <- Answer_List],
 	
 	%% A = Data, D = ActivePower
 	%% (SID, Data[n], Status[n], NOW())
 	%% Makes the Value fields for the SQL string
-	Combine = fun(A) -> lists:map(fun(D) -> "('"++PowerStrip_Id++"','"++D++"',NOW())" end, lists:zipwith(fun(X, Y) -> X++"','"++Y end, A, Id)) end,
+	[{_,PowerStrip_Id}|_] = Answer_List,
+	Combine = fun(A) -> lists:map(fun(D) -> "('"++integer_to_list(PowerStrip_Id)++"','"++D++"',NOW())" end, lists:zipwith(fun(X, Y) -> X++"','"++Y end, A, Id)) end,
 	
 	%% From List to String
 	Values = string:join(Combine(Data), ","),
