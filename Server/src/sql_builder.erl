@@ -91,7 +91,7 @@ new_data(PowerStrip_SerialId, Data) ->
 			FROM \"powerStrip_socket\", \"powerStrip_powerstrip\" 
 			WHERE \"powerStrip_socket\".\"powerStrip_id\"=\"powerStrip_powerstrip\".id 
 			AND \"powerStrip_powerstrip\".\"serialId\" = '"++PowerStrip_SerialId++"' 
-			ORDER BY \"powerStrip_socket\".id DESC"],
+			ORDER BY \"powerStrip_socket\".id ASC"],
 	{ok, Answer} = odbc_unit:input(SQL),
 	[{_,_,Answer_List}] = Answer,
 	Id = [integer_to_list(N) || {N,_} <- Answer_List],
