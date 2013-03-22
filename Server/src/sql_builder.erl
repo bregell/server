@@ -44,7 +44,7 @@ input(Input) ->
 					FROM \"powerStrip_consumption\", \"powerStrip_powerstrip\"
 					WHERE \"powerStrip_consumption\".\"powerStrip_id\"=\"powerStrip_powerstrip\".\"id\"
 					AND \"powerStrip_powerstrip\".\"serialId\"='"++PowerStrip_SerialId++"' 
-					ORDER BY \"timeStamp\" ASC 
+					ORDER BY \"timeStamp\" DESC 
 					LIMIT "++integer_to_list(Length)],
 			try (odbc_unit:input(Sql)) of
 				{ok, Answer} ->
