@@ -60,7 +60,7 @@ start(Address, Port, PowerStrip_Id) ->
 %% UnitID = string()
 send(Msg, Socket, PowerStrip_Id, Status) ->
 	random:seed(now()),
-	Data = [if S=="1"-> N; true -> 0 end|| {N,S} <- lists:zip([100+random:uniform(100), 200+random:uniform(300), 400+random:uniform(200), 100+random:uniform(100)],Status)],
+	Data = [if S=="1"-> N; true -> 0 end|| {N,S} <- lists:zip([100+random:uniform(100), 200+random:uniform(300), 400+random:uniform(200), 200+random:uniform(100)],Status)],
 	Convert = fun(A) -> lists:map(fun(B) -> integer_to_list(B) end, A) end,
 	Packet = fun(A) -> A++":"++string:join(Convert(Data), ";")++":"++string:join(Status, ";") end,
 	case gen_tcp:send(Socket, Packet(PowerStrip_Id)) of
