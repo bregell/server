@@ -59,8 +59,6 @@ start(Address, Port, PowerStrip_Id) ->
 %% Units = [UnitID] 
 %% UnitID = string()
 send(Msg, Socket, PowerStrip_Id, Status) ->
-	timer:sleep(timer:seconds(10)),
-	Msg ! start,
 	random:seed(now()),
 	Data = [if S=="1"-> N; true -> 0 end|| {N,S} <- lists:zip([100+random:uniform(100), 200+random:uniform(300), 400+random:uniform(200), 100+random:uniform(100)],Status)],
 	Convert = fun(A) -> lists:map(fun(B) -> integer_to_list(B) end, A) end,
@@ -72,7 +70,9 @@ send(Msg, Socket, PowerStrip_Id, Status) ->
 			io:fwrite("Error: "),
 			io:fwrite(Reason),
 			io:fwrite("\n")
-	end.
+	end,
+	timer:sleep(timer:seconds(10)),
+	Msg ! start.
 
 %% @doc
 %% Waits for messages on the given socket and then prints them.
