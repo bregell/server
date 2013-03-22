@@ -42,7 +42,7 @@ worker(PowerStrip_SerialId, Length) ->
 						 end) 
 				end,
 			Status_calc = [Bool_to_int(N) || N <- Status_bools],
-			Status_out = [if X==Y -> "D"; true -> X end || {X,Y} <- lists:zip(Status_calc, Status_now)],
+			Status_out = [if X==Y -> "D"; Y=="0"-> "D"; true -> X end || {X,Y} <- lists:zip(Status_calc, Status_now)],
 			controller ! {send,{PowerStrip_SerialId, lists:reverse(string:join(Status_out, ";"))}}
 	catch 
 		{error,_} ->
