@@ -44,7 +44,7 @@ input(Input) ->
 					FROM \"powerStrip_consumption\", \"powerStrip_powerstrip\"
 					WHERE \"powerStrip_consumption\".\"powerStrip_id\"=\"powerStrip_powerstrip\".\"id\"
 					AND \"powerStrip_powerstrip\".\"serialId\"='"++PowerStrip_SerialId++"' 
-					ORDER BY \"timeStamp\" DESC 
+					ORDER BY \"timeStamp\" ASC 
 					LIMIT "++integer_to_list(Length)],
 			try (odbc_unit:input(Sql)) of
 				{ok, Answer} ->
@@ -87,7 +87,11 @@ mailbox() ->
 %% Data = [string()]
 new_data(PowerStrip_SerialId, Data) ->
 	%% Get Id tags for each socket
-	SQL = ["SELECT \"powerStrip_socket\".id, \"powerStrip_powerstrip\".id FROM \"powerStrip_socket\", \"powerStrip_powerstrip\" WHERE \"powerStrip_socket\".\"powerStrip_id\"=\"powerStrip_powerstrip\".id AND \"powerStrip_powerstrip\".\"serialId\" = '"++PowerStrip_SerialId++"'"],
+	SQL = ["SELECT \"powerStrip_socket\".id, \"powerStrip_powerstrip\".id 
+			FROM \"powerStrip_socket\", \"powerStrip_powerstrip\" 
+			WHERE \"powerStrip_socket\".\"powerStrip_id\"=\"powerStrip_powerstrip\".id 
+			AND \"powerStrip_powerstrip\".\"serialId\" = '"++PowerStrip_SerialId++"' 
+			ORDER BY \"powerStrip_socket\".id DESC"],
 	{ok, Answer} = odbc_unit:input(SQL),
 	[{_,_,Answer_List}] = Answer,
 	Id = [integer_to_list(N) || {N,_} <- Answer_List],
@@ -126,5 +130,6 @@ get_status(PowerStrip_SerialId) ->
 	Sql = ["SELECT status 
 			FROM \"powerStrip_socket\", \"powerStrip_powerstrip\" 
 			WHERE \"powerStrip_socket\".\"powerStrip_id\"=\"powerStrip_powerstrip\".\"id\"
-			AND \"powerStrip_powerstrip\".\"serialId\"='"++PowerStrip_SerialId++"'"],
+			AND \"powerStrip_powerstrip\".\"serialId\"='"++PowerStrip_SerialId++"'
+			ORDER BY \"powerStrip_socket\".id ASC"],
 	odbc_unit:input(Sql).
