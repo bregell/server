@@ -131,5 +131,5 @@ get_status(PowerStrip_SerialId) ->
 			FROM \"powerStrip_socket\", \"powerStrip_powerstrip\" 
 			WHERE \"powerStrip_socket\".\"powerStrip_id\"=\"powerStrip_powerstrip\".\"id\"
 			AND \"powerStrip_powerstrip\".\"serialId\"='"++PowerStrip_SerialId++"'
-			ORDER BY \"powerStrip_socket\".id ASC"],
+			ORDER BY \"powerStrip_socket\".socket ASC"],
 	odbc_unit:input(Sql).

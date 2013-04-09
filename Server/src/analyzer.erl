@@ -55,7 +55,7 @@ worker(PowerStrip_SerialId, Length) ->
 analyzer(Answer) ->
 	{selected,_,Data} = Answer,
 	[Sorted] = split(lists:keysort(2,Data), [], length(Data)),
-	Function = fun(B) -> B >= 200 end,
+	Function = fun(B) -> B >= 50 end,
 	lists:reverse([lists:member(true, [Function(Y) || {_,_,_,Y} <- N]) || N <- Sorted]).
 
 split(List, [], Length) when length(List) < Length div 4 ->
