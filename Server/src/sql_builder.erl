@@ -26,9 +26,11 @@ start()->
 %% Answer = ({updated, NRows} | {selected, Cols, Rows})
 input(Input) ->	
 	case Input of
-		[PowerStrip_SerialId, Data, Status] ->
+		[PowerStrip_SerialId, Data, Status, Date, Time] ->
+			%% Create timestamp
+			Timestamp = string:join([integer_to_list(N) || N <- Date], "-") ++ " " ++ string:join([integer_to_list(N) || N <- Time], ":"),
 			%% Build SQL string
-			Sql = lists:append(catch(new_data(PowerStrip_SerialId, Data)),catch(new_status(PowerStrip_SerialId, Status))),
+			Sql = lists:append(catch(new_data(PowerStrip_SerialId, Data, Timestamp)),catch(new_status(PowerStrip_SerialId, Status))),
 			%% Send SQL to ODBC
 			try (odbc_unit:input(Sql)) of
 				{ok, Answer} ->
@@ -85,13 +87,13 @@ mailbox() ->
 %% @spec (SID, Data) -> [string()]
 %% SID = string()
 %% Data = [string()]
-new_data(PowerStrip_SerialId, Data) ->
+new_data(PowerStrip_SerialId, Data, Timestamp) ->
 	%% Get Id tags for each socket
 	SQL = ["SELECT \"powerStrip_socket\".id, \"powerStrip_powerstrip\".id 
 			FROM \"powerStrip_socket\", \"powerStrip_powerstrip\" 
 			WHERE \"powerStrip_socket\".\"powerStrip_id\"=\"powerStrip_powerstrip\".id 
 			AND \"powerStrip_powerstrip\".\"serialId\" = '"++PowerStrip_SerialId++"' 
-			ORDER BY \"powerStrip_socket\".id ASC"],
+			ORDER BY \"powerStrip_socket\".socket ASC"],
 	{ok, Answer} = odbc_unit:input(SQL),
 	[{_,_,Answer_List}] = Answer,
 	Id = [integer_to_list(N) || {N,_} <- Answer_List],
@@ -100,7 +102,7 @@ new_data(PowerStrip_SerialId, Data) ->
 	%% (SID, Data[n], Status[n], NOW())
 	%% Makes the Value fields for the SQL string
 	[{_,PowerStrip_Id}|_] = Answer_List,
-	Combine = fun(A) -> lists:map(fun(D) -> "('"++integer_to_list(PowerStrip_Id)++"','"++D++"',NOW())" end, lists:zipwith(fun(X, Y) -> X++"','"++Y end, A, Id)) end,
+	Combine = fun(A) -> lists:map(fun(D) -> "('"++integer_to_list(PowerStrip_Id)++"','"++D++"','"++Timestamp++"')" end, lists:zipwith(fun(X, Y) -> X++"','"++Y end, A, Id)) end,
 	
 	%% From List to String
 	Values = string:join(Combine(Data), ","),

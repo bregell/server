@@ -77,12 +77,12 @@ receiver(Socket) ->
 			%% Parse string into list 
 			Output = string:tokens(Package, ":"),
 			case Output of
-				[PowerStrip_SerialId,Data,Status] ->
+				[PowerStrip_SerialId,Data,Status,Date,Time] ->
 					io:fwrite(Package),
 					io:fwrite("\n"),
 					controller ! {new,{PowerStrip_SerialId,Socket}},
 					%% @issue Maybe cange this to some kind of message passing solution.
-					try (sql_builder:input([PowerStrip_SerialId,string:tokens(Data, ";"),string:tokens(Status, ";")])) of
+					try (sql_builder:input([PowerStrip_SerialId,string:tokens(Data, ";"),string:tokens(Status, ";"),string:tokens(Date, ";"),string:tokens(Time, ";")])) of
 						{ok, _} ->
 							io:fwrite("Data sent without problems!\n")
 					catch
