@@ -66,8 +66,8 @@ send(Msg, Socket, PowerStrip_Id, Status) ->
 	
 	%% Create time
 	Timestamp = calendar:now_to_datetime(erlang:now()),
-	Date = string:join([integer_to_list(N) || N <- [element(1,element(1,Timestamp)),element(2,element(1,Timestamp)),element(3,element(1,Timestamp))]], ":"),
-	Time = string:join([integer_to_list(N) || N <- [element(1,element(2,Timestamp)),element(2,element(2,Timestamp)),element(3,element(2,Timestamp))]], ":"),
+	Date = string:join([integer_to_list(N) || N <- [element(1,element(1,Timestamp)),element(2,element(1,Timestamp)),element(3,element(1,Timestamp))]], ";"),
+	Time = string:join([integer_to_list(N) || N <- [element(1,element(2,Timestamp)),element(2,element(2,Timestamp)),element(3,element(2,Timestamp))]], ";"),
 	
 	%% Create packet
 	Packet = fun(A) -> A++":"++string:join(Convert(Data), ";")++":"++string:join(Status, ";")++":"++Date++":"++Time end,
