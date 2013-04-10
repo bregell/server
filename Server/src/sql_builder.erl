@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/0,input/1,select/6,update/4,insert/4,get_status/1,new_status/2,new_data/3]).
+-export([start/0,input/1,select/6,update/4,insert/4,get_status/1,new_status/2,new_data/3,get_timers/0]).
 
 
 
