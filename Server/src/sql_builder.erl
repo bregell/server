@@ -136,3 +136,21 @@ get_status(PowerStrip_SerialId) ->
 			AND \"powerStrip_powerstrip\".\"serialId\"='"++PowerStrip_SerialId++"'
 			ORDER BY \"powerStrip_socket\".socket ASC"],
 	odbc_unit:input(Sql).
+
+get_timers() ->
+	Sql = ["SELECT \"serialId\", socket_id, status FROM(
+				SELECT socket_id, mode, "powerStrip_id", status FROM(
+					SELECT socket_id, mode 
+					FROM schedule_timer, schedule_socket_has_timer 
+					WHERE timer_id = id 
+					AND active = TRUE 
+					AND time BETWEEN (NOW() - INTERVAL '5' MINUTE) AND NOW()
+				) AS foo
+				INNER JOIN \"powerStrip_socket\"
+				ON socket_id = id
+				WHERE mode <> status
+			) AS bar
+			INNER JOIN \"powerStrip_powerstrip\"
+			ON \"powerStrip_id\" = id;"],
+	odbc_unit:input(Sql).
+
