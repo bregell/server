@@ -59,10 +59,18 @@ start(Address, Port, PowerStrip_Id) ->
 %% Units = [UnitID] 
 %% UnitID = string()
 send(Msg, Socket, PowerStrip_Id, Status) ->
+	%% Create random data
 	random:seed(now()),
 	Data = [if S=="1"-> N; true -> 0 end|| {N,S} <- lists:zip([100+random:uniform(100), 200+random:uniform(300), 400+random:uniform(200), 200+random:uniform(100)],Status)],
 	Convert = fun(A) -> lists:map(fun(B) -> integer_to_list(B) end, A) end,
-	Packet = fun(A) -> A++":"++string:join(Convert(Data), ";")++":"++string:join(Status, ";") end,
+	
+	%% Create time
+	Timestamp = calendar:now_to_datetime(erlang:now()),
+	Date = string:join([integer_to_list(N) || N <- [element(1,element(1,Timestamp)),element(2,element(1,Timestamp)),element(3,element(1,Timestamp))]], ":"),
+	Time = string:join([integer_to_list(N) || N <- [element(1,element(2,Timestamp)),element(2,element(2,Timestamp)),element(3,element(2,Timestamp))]], ":"),
+	
+	%% Create packet
+	Packet = fun(A) -> A++":"++string:join(Convert(Data), ";")++":"++string:join(Status, ";")++":"++Date++":"++Time end,
 	case gen_tcp:send(Socket, Packet(PowerStrip_Id)) of
 		ok ->
 			io:fwrite("Data sent:"++Packet(PowerStrip_Id)++" \n");
