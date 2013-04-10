@@ -29,13 +29,13 @@ worker() ->
 			Send = fun(PowerStrip_SerialId, Socket, Status) 
 				-> case Socket of
 					1 ->
-						controller ! {send, PowerStrip_SerialId, Status++";D;D;D"};
+						controller ! {send, {PowerStrip_SerialId, Status++";D;D;D"}};
 					2 ->
-						controller ! {send, PowerStrip_SerialId, "D;"++Status++";D;D"};
+						controller ! {send, {PowerStrip_SerialId, "D;"++Status++";D;D"}};
 					3 ->
-						controller ! {send, PowerStrip_SerialId, "D;D;"++Status++";D"};
+						controller ! {send, {PowerStrip_SerialId, "D;D;"++Status++";D"}};
 					4 ->
-						controller ! {send, PowerStrip_SerialId, "D;D;D"++Status}
+						controller ! {send, {PowerStrip_SerialId, "D;D;D"++Status}}
 					end
 				end,
 			[Send(PowerStrip_SerialId, Socket, Status) || {PowerStrip_SerialId, Socket, Status}  <- Rows];
