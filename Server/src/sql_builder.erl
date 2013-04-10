@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/0,input/1,select/6,update/4,insert/4,get_status/1,new_status/2,new_data/2]).
+-export([start/0,input/1,select/6,update/4,insert/4,get_status/1,new_status/2,new_data/3]).
 
 
 
@@ -87,6 +87,7 @@ mailbox() ->
 %% @spec (SID, Data) -> [string()]
 %% SID = string()
 %% Data = [string()]
+%% Timestamp = string()
 new_data(PowerStrip_SerialId, Data, Timestamp) ->
 	%% Get Id tags for each socket
 	SQL = ["SELECT \"powerStrip_socket\".id, \"powerStrip_powerstrip\".id 
