@@ -138,8 +138,8 @@ get_status(PowerStrip_SerialId) ->
 	odbc_unit:input(Sql).
 
 get_timers() ->
-	Sql = ["SELECT \"serialId\", socket_id, status FROM(
-				SELECT socket_id, mode, "powerStrip_id", status FROM(
+	Sql = ["SELECT \"serialId\", socket, socket_id, status FROM(
+				SELECT socket, socket_id, mode, \"powerStrip_id\", status FROM(
 					SELECT socket_id, mode 
 					FROM schedule_timer, schedule_socket_has_timer 
 					WHERE timer_id = id 
