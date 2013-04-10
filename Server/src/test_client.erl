@@ -73,14 +73,14 @@ send(Msg, Socket, PowerStrip_Id, Status) ->
 	Packet = fun(A) -> A++":"++string:join(Convert(Data), ";")++":"++string:join(Status, ";")++":"++Date++":"++Time end,
 	case gen_tcp:send(Socket, Packet(PowerStrip_Id)) of
 		ok ->
-			io:fwrite("Data sent:"++Packet(PowerStrip_Id)++" \n");
+			io:fwrite("Data sent:"++Packet(PowerStrip_Id)++" \n"),
+			timer:sleep(timer:seconds(10)),
+			Msg ! start;
 		{error, Reason} ->
 			io:fwrite("Error: "),
 			io:fwrite(Reason),
 			io:fwrite("\n")
-	end,
-	timer:sleep(timer:seconds(10)),
-	Msg ! start.
+	end.
 
 %% @doc
 %% Waits for messages on the given socket and then prints them.

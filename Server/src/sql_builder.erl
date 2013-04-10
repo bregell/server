@@ -28,7 +28,7 @@ input(Input) ->
 	case Input of
 		[PowerStrip_SerialId, Data, Status, Date, Time] ->
 			%% Create timestamp
-			Timestamp = string:join([integer_to_list(N) || N <- Date], "-") ++ " " ++ string:join([integer_to_list(N) || N <- Time], ":"),
+			Timestamp = string:join(Date, "-") ++ " " ++ string:join(Time, ":"),
 			%% Build SQL string
 			Sql = lists:append(catch(new_data(PowerStrip_SerialId, Data, Timestamp)),catch(new_status(PowerStrip_SerialId, Status))),
 			%% Send SQL to ODBC
