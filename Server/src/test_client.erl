@@ -42,7 +42,7 @@ start(Adress, PowerStrip_Id) ->
 start(Address, Port, PowerStrip_Id) ->
 	case gen_tcp:connect(Address, Port, [list, {active, false}, {packet, 0}]) of
 		{ok, Socket} ->
-			Pid = spawn_link(?MODULE, worker, [Socket, PowerStrip_Id, ["1","1","1",""]]),
+			Pid = spawn_link(?MODULE, worker, [Socket, PowerStrip_Id, ["1","1","1","1"]]),
 			spawn_link(?MODULE, receiver, [Socket, Pid]),
 			Pid ! start;
 		{error, Reason} ->

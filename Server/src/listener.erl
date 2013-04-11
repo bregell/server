@@ -79,7 +79,6 @@ receiver(Socket) ->
 			case Output of
 				[PowerStrip_SerialId,Data,Status,Date,Time] ->
 					io:fwrite(Package),
-					io:fwrite("\n"),
 					controller ! {new,{PowerStrip_SerialId,Socket}},
 					%% @issue Maybe cange this to some kind of message passing solution.
 					spawn(sql_builder, input, [[PowerStrip_SerialId,string:tokens(Data, ";"),string:tokens(Status, ";"),string:tokens(Date, ";"),string:tokens(Time, ";")]]),
@@ -91,11 +90,9 @@ receiver(Socket) ->
 					controller ! {new,{PowerStrip_SerialId, Socket}},
 					io:fwrite("One liner.\n"),
 					io:fwrite(Package),
-					io:fwrite("\n");
 				_ ->
 					io:fwrite("Error no matching case, tcp packet thrown away.\n"),
 					io:fwrite(Package),
-					io:fwrite("\n")
 			end,
 			receiver(Socket);
 		{error, Reason} ->
