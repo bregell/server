@@ -82,17 +82,7 @@ receiver(Socket) ->
 					io:fwrite("\n"),
 					controller ! {new,{PowerStrip_SerialId,Socket}},
 					%% @issue Maybe cange this to some kind of message passing solution.
-					try (sql_builder:input([PowerStrip_SerialId,string:tokens(Data, ";"),string:tokens(Status, ";"),string:tokens(Date, ";"),string:tokens(Time, ";")])) of
-						{ok, _} ->
-							io:fwrite("Data saved without problems!\n")
-					catch
-						{error, Reason} ->
-							io:fwrite("Error when saved data!\n"),
-							io:fwrite(Reason),
-							io:fwrite("\n");
-						_ ->
-							io:fwrite("Strange things is happening!\n")
-					end,
+					spawn(sql_builder, input, [[PowerStrip_SerialId,string:tokens(Data, ";"),string:tokens(Status, ";"),string:tokens(Date, ";"),string:tokens(Time, ";")]]),
 					analyzer ! {read, PowerStrip_SerialId};
 				[PowerStrip_SerialId, Status] ->
 					odbc_unit:input(sql_builder:new_status(PowerStrip_SerialId, string:tokens(Status, ";"))),
