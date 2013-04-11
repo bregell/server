@@ -72,7 +72,6 @@ receiver(Socket) ->
 	io:fwrite("Waiting for package\n"),
 	%% @todo Add some good timeout value maybe.
 	case gen_tcp:recv(Socket, 0) of
-		spawn_link(?MODULE, receiver, [Socket]),
 		{ok, Package} ->
 			io:fwrite("Recieve OK\n"),
 			%% Parse string into list 
@@ -107,7 +106,8 @@ receiver(Socket) ->
 					io:fwrite("Error no matching case, tcp packet thrown away.\n"),
 					io:fwrite(Package),
 					io:fwrite("\n")
-			end;
+			end,
+			receiver(Socket);
 		{error, Reason} ->
 			io:fwrite("Could not recieve!\n"),
 			io:fwrite(Reason),
