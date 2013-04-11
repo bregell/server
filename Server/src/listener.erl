@@ -30,7 +30,7 @@ start(Port)->
 %% @spec (Port) -> (pid() | string()) 
 %% Port = inet:portnumber()
 server(Port) ->
-	case gen_tcp:listen(Port, [list, {active, false}, {packet, 0}]) of
+	case gen_tcp:listen(Port, [list, {active, false}, {packet, line}]) of
 		{ok, Listen} ->
 			spawn_link(?MODULE, listener, [self(), Listen]),
 			loop(Listen);
