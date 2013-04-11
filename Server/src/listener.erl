@@ -89,10 +89,10 @@ receiver(Socket) ->
 				[PowerStrip_SerialId] ->
 					controller ! {new,{PowerStrip_SerialId, Socket}},
 					io:fwrite("One liner.\n"),
-					io:fwrite(Package),
+					io:fwrite(Package);
 				_ ->
 					io:fwrite("Error no matching case, tcp packet thrown away.\n"),
-					io:fwrite(Package),
+					io:fwrite(Package)
 			end,
 			receiver(Socket);
 		{error, Reason} ->
