@@ -42,7 +42,7 @@ start(Adress, PowerStrip_Id) ->
 start(Address, Port, PowerStrip_Id) ->
 	case gen_tcp:connect(Address, Port, [list, {active, false}, {packet, 0}]) of
 		{ok, Socket} ->
-			Pid = spawn_link(?MODULE, worker, [Socket, PowerStrip_Id, ["0","0","0","0"]]),
+			Pid = spawn_link(?MODULE, worker, [Socket, PowerStrip_Id, ["1","1","1",""]]),
 			spawn_link(?MODULE, receiver, [Socket, Pid]),
 			Pid ! start;
 		{error, Reason} ->
@@ -70,10 +70,10 @@ send(Msg, Socket, PowerStrip_Id, Status) ->
 	Time = string:join([integer_to_list(N) || N <- [element(1,element(2,Timestamp)),element(2,element(2,Timestamp)),element(3,element(2,Timestamp))]], ";"),
 	
 	%% Create packet
-	Packet = fun(A) -> A++":"++string:join(Convert(Data), ";")++":"++string:join(Status, ";")++":"++Date++":"++Time end,
+	Packet = fun(A) -> A++":"++string:join(Convert(Data), ";")++":"++string:join(Status, ";")++":"++Date++":"++Time++"\n" end,
 	case gen_tcp:send(Socket, Packet(PowerStrip_Id)) of
 		ok ->
-			io:fwrite("Data sent:"++Packet(PowerStrip_Id)++" \n"),
+			io:fwrite("Data sent:"++Packet(PowerStrip_Id)),
 			timer:sleep(timer:seconds(10)),
 			Msg ! start;
 		{error, Reason} ->
