@@ -41,7 +41,7 @@ worker() ->
 			{ok, [{selected,_,Repeater_Rows}]} = sql_builder:get_repeaters(),
 			Rows = lists:append(Timer_Rows, Repeater_Rows),
 			[Send(PowerStrip_SerialId, Socket, integer_to_list(Status)) || {PowerStrip_SerialId, Socket, Status}  <- Rows];
-		_ ->
+		_Else ->
 			io:fwrite("Bad message\n")
 	end,
 	worker().
@@ -50,6 +50,11 @@ loop(Pid) ->
 	{_,{_,Min,_}} = calendar:now_to_local_time(now()),
 	case (Min rem 5) of
 		0 ->
-			Pid ! start
-	end,
-	loop(Pid).
+			Pid ! start,
+			loop(Pid);
+		_Else ->
+			timer:sleep(timer:seconds(1)),
+			io:fwrite("Else"),
+			loop(Pid)
+	end.
+	
