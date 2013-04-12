@@ -33,8 +33,11 @@ worker() ->
 	worker().
 
 loop(Pid) ->
-	timer:sleep(timer:minutes(5)),
-	Pid ! start,
+	{_,{_,Min,_}} = calendar:now_to_local_time(now()),
+	case (Min rem 5) of
+		0 ->
+			Pid ! start
+	end,
 	loop(Pid).
 	
 timer() ->
