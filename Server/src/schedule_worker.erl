@@ -25,6 +25,7 @@ start() ->
 worker() ->
 	receive
 		start ->
+			io:fwrite("Started Scheduling worker\n"),
 			Send = fun(PowerStrip_SerialId, Socket, Status) -> 
 				case Socket of
 					1 ->
@@ -51,7 +52,7 @@ loop(Pid) ->
 	case (Min rem 5) of
 		0 ->
 			Pid ! start,
-			timer:sleep(timer:minutes(4),
+			timer:sleep(timer:minutes(4)),
 			loop(Pid);
 		_Else ->
 			timer:sleep(timer:seconds(1)),
