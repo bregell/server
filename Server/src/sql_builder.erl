@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/0,input/1,select/6,update/4,insert/4,get_status/1,new_status/2,new_data/3,get_timers/0]).
+-export([start/0,input/1,select/6,update/4,insert/4,get_status/1,new_status/2,new_data/3,get_timers/0,get_repeaters/0]).
 
 
 
@@ -138,19 +138,101 @@ get_status(PowerStrip_SerialId) ->
 	odbc_unit:input(Sql).
 
 get_timers() ->
-	Sql = ["SELECT \"serialId\", socket, socket_id, status FROM(
-				SELECT socket, socket_id, mode, \"powerStrip_id\", status FROM(
-					SELECT socket_id, mode 
-					FROM schedule_timer, schedule_socket_has_timer 
-					WHERE timer_id = id 
-					AND active = TRUE 
-					AND time BETWEEN (NOW() - INTERVAL '5' MINUTE) AND NOW()
-				) AS foo
-				INNER JOIN \"powerStrip_socket\"
-				ON socket_id = id
-				WHERE mode <> status
-			) AS bar
-			INNER JOIN \"powerStrip_powerstrip\"
-			ON \"powerStrip_id\" = id;"],
+	Sql = [
+		"SELECT \"serialId\", socket, socket_id, mode FROM(
+			SELECT socket, socket_id, mode, \"powerStrip_id\", status FROM(
+				SELECT socket_id, mode 
+				FROM schedule_timer, schedule_socket_has_timer 
+				WHERE timer_id = id 
+				AND active = TRUE 
+				AND time BETWEEN (NOW() - INTERVAL '5' MINUTE) AND NOW()
+			) AS foo
+			INNER JOIN \"powerStrip_socket\"
+			ON socket_id = id
+			WHERE mode <> status
+		) AS bar
+		INNER JOIN \"powerStrip_powerstrip\"
+		ON \"powerStrip_id\" = id"
+	],
 	odbc_unit:input(Sql).
-
+	
+get_repeaters() ->
+	Sql = [
+		"SELECT \"serialId\", socket, socket_id, mode FROM
+		(
+			SELECT socket, socket_id, mode, \"powerStrip_id\" FROM
+			(
+				SELECT * FROM
+				(
+					SELECT id as repeat_id, mode FROM 
+					(
+						SELECT sr.id, activefrom, activeto, day, active, action_one_time, action_one_mode as mode FROM 
+						schedule_day as sd, schedule_repeat as sr, schedule_repeat_has_day as srhd
+						WHERE
+						sr.id = srhd.repeat_id
+						AND
+						srhd.day_id = sd.id
+						UNION 
+						SELECT sr.id, activefrom, activeto, NULL as day, active, action_one_time, action_one_mode as mode FROM 
+						schedule_repeat as sr, schedule_repeat_has_day as srhd
+						WHERE 
+						sr.id <> srhd.repeat_id
+					) as one
+					WHERE 
+					active = true
+					AND
+					action_one_time BETWEEN (localtime - INTERVAL '3' MINUTE) AND (localtime + INTERVAL '2' MINUTE)
+					AND(
+						day IS NULL
+						OR
+						day = CAST(to_char(NOW(), 'D') as int)
+					)
+					AND
+					activefrom <= NOW()
+					AND(
+						activeto >= NOW()
+						OR
+						activeto IS NULL
+					)
+					UNION
+					SELECT id as socket_id, mode FROM 
+					(
+						SELECT sr.id, activefrom, activeto, day, active, action_two_time, action_two_mode as mode FROM 
+						schedule_day as sd, schedule_repeat as sr, schedule_repeat_has_day as srhd
+						WHERE
+						sr.id = srhd.repeat_id
+						AND
+						srhd.day_id = sd.id
+						UNION 
+						SELECT sr.id, activefrom, activeto, NULL as day, active, action_two_time, action_two_mode as mode FROM 
+						schedule_repeat as sr, schedule_repeat_has_day as srhd
+						WHERE 
+						sr.id <> srhd.repeat_id
+					) as two
+					WHERE 
+					active = true
+					AND
+					action_two_time BETWEEN (localtime - INTERVAL '3' MINUTE) AND (localtime + INTERVAL '2' MINUTE)
+					AND(
+					day IS NULL
+					OR
+					day = CAST(to_char(NOW(), 'D') as int)
+					)
+					AND
+					activefrom <= NOW()
+					AND(
+					activeto >= NOW()
+					OR
+					activeto IS NULL
+					)
+				) as repeat
+				NATURAL JOIN schedule_socket_has_repeat
+			) AS foo
+			INNER JOIN \"powerStrip_socket\"
+			ON socket_id = id
+			WHERE mode <> status
+		) AS bar
+		INNER JOIN \"powerStrip_powerstrip\"
+		ON \"powerStrip_id\" = id"
+	],
+	odbc_unit:input(Sql).
