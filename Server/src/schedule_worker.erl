@@ -45,6 +45,7 @@ worker() ->
 		_Else ->
 			io:fwrite("Bad message\n")
 	end,
+	io:fwrite("Schedule worker finished\n"),
 	worker().
 
 loop(Pid) ->
@@ -56,7 +57,7 @@ loop(Pid) ->
 			loop(Pid);
 		_Else ->
 			timer:sleep(timer:seconds(1)),
-			io:fwrite("Else"),
+			io:fwrite("Else"), %Remove once stable
 			loop(Pid)
 	end.
 	
