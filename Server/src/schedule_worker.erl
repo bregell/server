@@ -8,7 +8,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/0,worker/0,timer/0,schedule/0]).
+-export([start/0,worker/0]).
 
 
 
@@ -25,8 +25,22 @@ start() ->
 worker() ->
 	receive
 		start ->
-			spawn_link(?MODULE, timer, []),
-			spawn_link(?MODULE, schedule, []);
+			Send = fun(PowerStrip_SerialId, Socket, Status) -> 
+				case Socket of
+					1 ->
+						controller ! {send, {PowerStrip_SerialId, Status++";D;D;D"}};
+					2 ->
+						controller ! {send, {PowerStrip_SerialId, "D;"++Status++";D;D"}};
+					3 ->
+						controller ! {send, {PowerStrip_SerialId, "D;D;"++Status++";D"}};
+					4 ->
+						controller ! {send, {PowerStrip_SerialId, "D;D;D"++Status}}
+				end
+			end,
+			{ok, [{selected,_,Timer_Rows}]} = sql_builder:get_timers(),
+			{ok, [{selected,_,Repeater_Rows}]} = sql_builder:get_repeaters(),
+			Rows = lists:append(Timer_Rows, Repeater_Rows),
+			[Send(PowerStrip_SerialId, Socket, integer_to_list(Status)) || {PowerStrip_SerialId, Socket, Status}  <- Rows];
 		_ ->
 			io:fwrite("Bad message\n")
 	end,
@@ -39,22 +53,3 @@ loop(Pid) ->
 			Pid ! start
 	end,
 	loop(Pid).
-	
-timer() ->
-Send = fun(PowerStrip_SerialId, Socket, Status) 
-	-> case Socket of
-		1 ->
-			controller ! {send, {PowerStrip_SerialId, Status++";D;D;D"}};
-		2 ->
-			controller ! {send, {PowerStrip_SerialId, "D;"++Status++";D;D"}};
-		3 ->
-			controller ! {send, {PowerStrip_SerialId, "D;D;"++Status++";D"}};
-		4 ->
-			controller ! {send, {PowerStrip_SerialId, "D;D;D"++Status}}
-	end
-end,
-{ok, [{selected,_,Rows}]} = sql_builder:get_timers(),
-[Send(PowerStrip_SerialId, Socket, integer_to_list(Status)) || {PowerStrip_SerialId, Socket, Status}  <- Rows].
-
-schedule() ->
-	io:fwrite("To be inmplemented\n").
