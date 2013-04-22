@@ -106,7 +106,7 @@ login(UserName, Password, Socket) ->
 		select row_to_json(t)
 		from
 		(
-			select '"++UserName++"' as username, apikey, 'true' as login 
+			select '"++UserName++"' as username, apikey, true as login 
 			from auth_user
 			where username = '"++UserName++"'
 			and password = '"++Password++"'
