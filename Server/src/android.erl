@@ -11,19 +11,12 @@
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
-decode([Input], Socket) ->
-	Strip = fun(Str) -> 
-		case string:substr(string:substr(Str, 1, string:len(Str)-2), 1, 1) of
-			"{" ->
-				string:strip(string:strip(Str,left, ${), right, $});
-			"[" ->
-				string:strip(string:strip(Str,left, ${), right, $})
-		end
-	end,
-	List = [{A,B} || [A,B] <- [string:tokens(A, ":") || A <- string:tokens(Strip(Input), ",")]],
-	io:fwrite("Android data: "++Input++"\n"),
-	io:fwrite(List),
-	io:fwrite("\n"),
+decode([Package], Socket) ->
+	io:fwrite("Package data: "++Package),
+	Strip = fun(Str) -> string:sub_string(Str, 2, string:len(Str)-2) end,
+	Input = Strip(Package),
+	io:fwrite("Input data: "++Input++"\n"),
+	List = [{A,B} || [A,B] <- [string:tokens(A, ":") || A <- string:tokens(Input, ",")]],
 	case List of
 		[{"username",UserName},{"request",Request}|Data] ->
 			case Request of 
