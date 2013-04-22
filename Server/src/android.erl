@@ -11,9 +11,9 @@
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
-decode(Input, Socket) ->
+decode([Input], Socket) ->
 	Strip = fun(Str) -> 
-		case string:substr(Str, 1, 1) of
+		case string:substr(string:substr(Str, 1, string:len(Str)-2), 1, 1) of
 			"{" ->
 				string:strip(string:strip(Str,left, ${), right, $});
 			"[" ->
