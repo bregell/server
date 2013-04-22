@@ -299,7 +299,7 @@ query(Sql) ->
 	end.
 	
 send(Socket, Message) ->
-	case gen_tcp:send(Socket, "Android#"++Message) of
+	case gen_tcp:send(Socket, "Android#"++Message++"\n") of
 			ok ->
 				io:fwrite("Sent: Android#"++Message++"\n");
 			{error, _} ->
