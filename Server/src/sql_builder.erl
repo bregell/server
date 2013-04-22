@@ -236,3 +236,4 @@ get_repeaters() ->
 		ON \"powerStrip_id\" = id"
 	],
 	odbc_unit:input(Sql).
+	

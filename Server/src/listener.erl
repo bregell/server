@@ -74,38 +74,43 @@ receiver(Socket) ->
 	case gen_tcp:recv(Socket, 0) of
 		{ok, Package} ->
 			io:fwrite("Recieve OK\n"),
-			%% Parse string into list 
-			Output = string:tokens(Package, ":"),
-			case Output of
-				[PowerStrip_SerialId,Data,Status,Date,Time] ->
-					io:fwrite(Package),
-					io:fwrite("\n"),
-					controller ! {new,{PowerStrip_SerialId,Socket}},
-					%% @issue Maybe cange this to some kind of message passing solution.
-					try (sql_builder:input([PowerStrip_SerialId,string:tokens(Data, ";"),string:tokens(Status, ";"),string:tokens(Date, ";"),string:tokens(Time, ";")])) of
-						{ok, _} ->
-							io:fwrite("Data saved without problems!\n")
-					catch
-						{error, Reason} ->
-							io:fwrite("Error when saved data!\n"),
-							io:fwrite(Reason),
+			%% Parse string into list
+			case string:tokens(Package, "#") of
+				["Android"|Data] ->
+					spawn(android, decode, [Data,Socket]);
+				_Else ->		
+					Output = string:tokens(Package, ":"),
+					case Output of
+						[PowerStrip_SerialId,Data,Status,Date,Time] ->
+							io:fwrite(Package),
+							io:fwrite("\n"),
+							controller ! {new,{PowerStrip_SerialId,Socket}},
+							%% @issue Maybe cange this to some kind of message passing solution.
+							try (sql_builder:input([PowerStrip_SerialId,string:tokens(Data, ";"),string:tokens(Status, ";"),string:tokens(Date, ";"),string:tokens(Time, ";")])) of
+								{ok, _} ->
+									io:fwrite("Data saved without problems!\n")
+							catch
+								{error, Reason} ->
+									io:fwrite("Error when saved data!\n"),
+									io:fwrite(Reason),
+									io:fwrite("\n");
+								_ ->
+									io:fwrite("Strange things is happening!\n")
+							end,
+							analyzer ! {read, PowerStrip_SerialId};
+						[PowerStrip_SerialId, Status] ->
+							odbc_unit:input(sql_builder:new_status(PowerStrip_SerialId, string:tokens(Status, ";"))),
+							controller ! {send,{PowerStrip_SerialId, Status}};
+						[PowerStrip_SerialId] ->
+							controller ! {new,{PowerStrip_SerialId, Socket}},
+							io:fwrite("One liner.\n"),
+							io:fwrite(Package),
 							io:fwrite("\n");
 						_ ->
-							io:fwrite("Strange things is happening!\n")
-					end,
-					analyzer ! {read, PowerStrip_SerialId};
-				[PowerStrip_SerialId, Status] ->
-					odbc_unit:input(sql_builder:new_status(PowerStrip_SerialId, string:tokens(Status, ";"))),
-					controller ! {send,{PowerStrip_SerialId, Status}};
-				[PowerStrip_SerialId] ->
-					controller ! {new,{PowerStrip_SerialId, Socket}},
-					io:fwrite("One liner.\n"),
-					io:fwrite(Package),
-					io:fwrite("\n");
-				_ ->
-					io:fwrite("Error no matching case, tcp packet thrown away.\n"),
-					io:fwrite(Package),
-					io:fwrite("\n")
+							io:fwrite("Error no matching case, tcp packet thrown away.\n"),
+							io:fwrite(Package),
+							io:fwrite("\n")
+					end
 			end,
 			receiver(Socket);
 		{error, Reason} ->

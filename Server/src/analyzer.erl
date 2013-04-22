@@ -72,4 +72,3 @@ split(List, [], Length) ->
 split(List, Ans, Length) when length(List) >= Length div 4 ->
 	{X,Y} = lists:split(Length div 4, List),
 	split(Y, [X|Ans], Length).
-
