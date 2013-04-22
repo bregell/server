@@ -22,6 +22,8 @@ decode([Input], Socket) ->
 	end,
 	List = [{A,B} || [A,B] <- [string:tokens(A, ":") || A <- string:tokens(Strip(Input), ",")]],
 	io:fwrite("Android data: "++Input++"\n"),
+	io:fwrite(List),
+	io:fwrite("\n"),
 	case List of
 		[{"username",UserName},{"request",Request}|Data] ->
 			case Request of 
