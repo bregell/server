@@ -57,7 +57,6 @@ loop(Pid) ->
 			loop(Pid);
 		_Else ->
 			timer:sleep(timer:seconds(1)),
-			io:fwrite("Else"), %Remove once stable
 			loop(Pid)
 	end.
 	
