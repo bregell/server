@@ -77,7 +77,7 @@ receiver(Socket) ->
 			%% Parse string into list
 			case string:tokens(Package, "#") of
 				["Android"|Data] ->
-					spawn(android, decode, [Data,Socket]);
+					spawn(android, decode, [string:substr(Data, 1,string:len(Data)-2), Socket]);
 				_Else ->		
 					Output = string:tokens(Package, ":"),
 					case Output of
