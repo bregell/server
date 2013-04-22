@@ -4,7 +4,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([decode/2]).
+-export([decode/2,query/1, login/3]).
 
 
 
@@ -21,6 +21,7 @@ decode([Input], Socket) ->
 		end
 	end,
 	List = [{A,B} || [A,B] <- [string:tokens(A, ":") || A <- string:tokens(Strip(Input), ",")]],
+	io:fwrite("Android data: "++Input++"\n"),
 	case List of
 		[{"username",UserName},{"request",Request}|Data] ->
 			case Request of 
@@ -288,25 +289,18 @@ switch(SocketId, ApiKey, Socket, Switch) ->
 	end.
 	
 queryAndSend(Sql, Socket) ->
-	send(Socket, query(Sql)).
+	[{Message}] = query(Sql),
+	send(Socket, Message).
 	
 query(Sql) ->
 	{ok, Conn} = odbc:connect("DSN=PostgreSQL30", []),
-	try (odbc:sql_query(Conn, Sql)) of
+	case (odbc:sql_query(Conn, Sql)) of
 		{updated, N} ->
-			odbc:disconnect(Conn),
 			N;
-		{selected, _, R} ->
-			odbc:disconnect(Conn),
-			R;
-		{error, Reason} ->
-			odbc:disconnect(Conn),
-			{error, Reason}
-	catch 
-		{error, Reason} ->
-			odbc:disconnect(Conn),
-			{error, Reason}
-		
+		{selected,_,N} ->
+			N;
+		{error, _} ->
+			io:fwrite("Error at sql query\n")
 	end.
 	
 send(Socket, Message) ->
