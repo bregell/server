@@ -97,7 +97,9 @@ decode([Package], Socket) ->
 						_Else -> 
 							io:fwrite("Bad data for turnOff request\n")
 					end
-			end
+			end;
+		_Else ->
+			io:fwrite("Bad packet")
 	end.
 	
 login(UserName, Password, Socket) ->
@@ -277,15 +279,20 @@ switch(SocketId, ApiKey, Socket, Switch) ->
 	",
 	case query(Sql_serialId) of
 		[{SerialID, SocketId, SocketNumber}] ->
-			send(Socket, "{\"socketid\":\""++SocketId++"\",\"reuslt\":true}"),
+			send(Socket, "{\"socketid\":\""++SocketId++"\",\"result\":true}"),
 			controlSocket(SerialID, SocketNumber, Switch);
 		_Else ->
 			io:fwrite("Error when trying to find PowerStrip_serialID\n")
 	end.
 	
 queryAndSend(Sql, Socket) ->
-	[{Message}] = query(Sql),
-	send(Socket, Message).
+	Result = query(Sql),
+	case Result of 
+		[{Message}] ->
+			send(Socket, Message);
+		[] ->
+			send(Socket, "Android#{\"status\":\"failed\"}")
+	end.
 	
 query(Sql) ->
 	{ok, Conn} = odbc:connect("DSN=PostgreSQL30", []),
