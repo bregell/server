@@ -81,7 +81,7 @@ receiver(Socket) ->
 					io:fwrite(Package),
 					controller ! {new,{PowerStrip_SerialId,Socket}},
 					%% @issue Maybe cange this to some kind of message passing solution.
-					spawn(sql_builder, input, [[PowerStrip_SerialId,string:tokens(Data, ";"),string:tokens(Status, ";"),string:tokens(Date, ";"),string:tokens(Time, ";")]]),
+					spawn(sql_builder, input, [[PowerStrip_SerialId,string:tokens(Data, ";"),string:tokens(Status, ";"),string:tokens(Date, ";"),string:tokens(Time, ";")]]);
 					%analyzer ! {read, PowerStrip_SerialId};
 				[PowerStrip_SerialId, Status] ->
 					odbc_unit:input(sql_builder:new_status(PowerStrip_SerialId, string:tokens(Status, ";"))),
