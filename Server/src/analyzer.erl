@@ -45,6 +45,8 @@ worker(PowerStrip_SerialId, Length) ->
 			Status_out = [if X==Y -> "D"; Y=="0"-> "D"; true -> X end || {X,Y} <- lists:zip(Status_calc, Status_now)],
 			case Status_out of
 				["D","D","D","D"] ->
+					io:fwrite("No change in analyzer\n");
+				_Else ->
 					controller ! {send,{PowerStrip_SerialId, string:join(Status_out, ";")}}
 			end
 	catch 
