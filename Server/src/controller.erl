@@ -112,5 +112,11 @@ send(PowerStrip_SerialId, Status, RequestSocket) ->
 					end
 			end;
 		{not_found} ->  
-			io:fwrite("Socket not found \n")
+			io:fwrite("Socket not found \n"),
+			case gen_tcp:send(RequestSocket, "swichRequestFailed\n") of
+				ok ->
+					io:fwrite("Switch Request fail ack sent\n");
+				_Else ->
+					io:fwrite("Switch Request fail ack not sent\n")
+			end
 	end.
