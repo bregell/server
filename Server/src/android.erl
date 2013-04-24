@@ -25,14 +25,16 @@ decode([Package], Socket) ->
 						[{"password",Password}] ->
 							login(UserName, Password, Socket);
 						_Else ->
-							io:fwrite("Bad data for login request\n")
+							io:fwrite("Bad data for login request\n"),
+							send(Socket, "{\"socketid\":\""++UserName++"\",\"result\":false}")
 					end;
 				"powerstrips" ->
 					case Data of 
 						[{"apikey",ApiKey}] ->
 							getPowerStrips(UserName, ApiKey, Socket);
 						_Else ->
-							io:fwrite("Bad data for getPowerStrips request\n")
+							io:fwrite("Bad data for getPowerStrips request\n"),
+							send(Socket, "{\"socketid\":\""++UserName++"\",\"result\":false}")
 					end
 			end;	
 		[{"powerstripid",PowerStripId},{"request",Request}|Data] ->
@@ -42,18 +44,21 @@ decode([Package], Socket) ->
 						[{"apikey", ApiKey}] ->
 							getSockets(PowerStripId, ApiKey, Socket);
 						_Else -> 
-							io:fwrite("Bad data for getSockets request\n")
+							io:fwrite("Bad data for getSockets request\n"),
+							send(Socket, "{\"socketid\":\""++PowerStripId++"\",\"result\":false}")
 					end;
 				"consumption" ->
 					case Data of
 						[
 							{"apikey", ApiKey},
-							{"startdate",StartDate},
-							{"enddate",EndDate}
+							{"startdate", StartDate},
+							{"enddate", EndDate}
 						] ->
+							
 							getConsumptionPowerStrip(PowerStripId, ApiKey, Socket, StartDate, EndDate);
 						_Else -> 
-							io:fwrite("Bad data for getConsumptionPowerStrip request\n")
+							io:fwrite("Bad data for getConsumptionPowerStrip request\n"),
+							send(Socket, "{\"socketid\":\""++PowerStripId++"\",\"result\":false}")
 					end
 			end;	
 		[{"socketid",SocketId},{"request",Request}|Data] ->
@@ -67,7 +72,8 @@ decode([Package], Socket) ->
 						] ->
 							getConsumptionSocket(SocketId, ApiKey, Socket, StartDate, EndDate);
 						_Else -> 
-							io:fwrite("Bad data for getConsumptionSocket request\n")
+							io:fwrite("Bad data for getConsumptionSocket request\n"),
+							send(Socket, "{\"socketid\":\""++SocketId++"\",\"result\":false}")
 					end;
 				"setname" ->
 					case Data of
@@ -77,7 +83,8 @@ decode([Package], Socket) ->
 						] ->
 							setName(SocketId, ApiKey, Socket, NewName);
 						_Else -> 
-							io:fwrite("Bad data for setName request\n")
+							io:fwrite("Bad data for setName request\n"),
+							send(Socket, "{\"socketid\":\""++SocketId++"\",\"result\":false}")
 					end;
 				"ournon" ->
 					case Data of
@@ -86,7 +93,8 @@ decode([Package], Socket) ->
 						] ->
 							switch(SocketId, ApiKey, Socket, "1");
 						_Else -> 
-							io:fwrite("Bad data for turnOn request\n")
+							io:fwrite("Bad data for turnOn request\n"),
+							send(Socket, "{\"socketid\":\""++SocketId++"\",\"result\":false}")
 					end;
 				"turnoff" ->
 					case Data of
@@ -95,11 +103,12 @@ decode([Package], Socket) ->
 						] ->
 							switch(SocketId, ApiKey, Socket, "0");
 						_Else -> 
-							io:fwrite("Bad data for turnOff request\n")
+							io:fwrite("Bad data for turnOff request\n"),
+							send(Socket, "{\"socketid\":\""++SocketId++"\",\"result\":false}")
 					end
 			end;
 		_Else ->
-			io:fwrite("Bad packet")
+			send(Socket, "{\"result\":false}")
 	end.
 	
 login(UserName, Password, Socket) ->
@@ -303,7 +312,7 @@ query(Sql) ->
 			N;
 		{error, _} ->
 			io:fwrite("Error at sql query\n"),
-			[{{}}]
+			[]
 	end.
 	
 send(Socket, Message) ->
