@@ -78,6 +78,7 @@ send(PowerStrip_SerialId, Status) ->
 			io:fwrite("Found\n"),
 			case gen_tcp:send(Socket, PowerStrip_SerialId++":"++Status) of
 				ok ->
+					spawn(odbc_unit, input, [sql_builder:new_status(PowerStrip_SerialId, string:tokens(Status, ";"))]),
 					io:fwrite("Sent: "),
 					io:fwrite(PowerStrip_SerialId++":"++Status++"\n");
 				{error, _} ->
@@ -94,9 +95,10 @@ send(PowerStrip_SerialId, Status, RequestSocket) ->
 			io:fwrite("Found\n"),
 			case gen_tcp:send(Socket, PowerStrip_SerialId++":"++Status) of
 				ok ->
+					spawn(odbc_unit, input, [sql_builder:new_status(PowerStrip_SerialId, string:tokens(Status, ";"))]),
 					io:fwrite("Sent: "),
 					io:fwrite(PowerStrip_SerialId++":"++Status++"\n"),
-					case gen_tcp:send(RequestSocket, "swichRequestTrue\n") of
+					case gen_tcp:send(RequestSocket, "switchRequestTrue\n") of
 						ok ->
 							io:fwrite("Switch Request ok ack sent\n");
 						_Else ->
@@ -104,7 +106,7 @@ send(PowerStrip_SerialId, Status, RequestSocket) ->
 					end;
 				{error, _} ->
 					io:fwrite("Could not send to: "++PowerStrip_SerialId++"\n"),
-					case gen_tcp:send(RequestSocket, "swichRequestFailed\n") of
+					case gen_tcp:send(RequestSocket, "switchRequestFailed\n") of
 							ok ->
 							io:fwrite("Switch Request fail ack sent\n");
 						_Else ->
@@ -113,7 +115,7 @@ send(PowerStrip_SerialId, Status, RequestSocket) ->
 			end;
 		{not_found} ->  
 			io:fwrite("Socket not found \n"),
-			case gen_tcp:send(RequestSocket, "swichRequestFailed\n") of
+			case gen_tcp:send(RequestSocket, "switchRequestFailed\n") of
 				ok ->
 					io:fwrite("Switch Request fail ack sent\n");
 				_Else ->
