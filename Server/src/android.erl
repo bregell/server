@@ -54,6 +54,7 @@ decode([Package], Socket) ->
 							{"startdate", StartDate},
 							{"enddate", EndDate}
 						] ->
+							%%powerstripid:12,request:consumption,apikey:1a2b3c4d5e6f7g,startdate:2010-01-01 00-00-00.000+0000,enddate:2014-01-01 00-00-00.000+0000
 							[SDate,STime] = string:tokens(StartDate, " "),
 							StartTimestamp = SDate++" "++string:join(string:tokens(STime, "-"), ":"),
 							[EDate,ETime] = string:tokens(EndDate, " "),
@@ -197,7 +198,7 @@ getConsumptionPowerStrip(PowerStripId, ApiKey, Socket, StartDate, EndDate) ->
 				inner join \"powerStrip_powerstrip\" as psp
 				on psc.\"powerStrip_id\" = psp.id
 				where psc.\"powerStrip_id\" = '"++PowerStripId++"'
-				and \"activePower\" BETWEEN '"++StartDate++"' AND '"++EndDate++"'
+				and \"timeStamp\" BETWEEN '"++StartDate++"' AND '"++EndDate++"'
 				group by \"timeStamp\", \"user_id\"
 			) as atu
 			on atu.user_id = au.id
@@ -208,10 +209,10 @@ getConsumptionPowerStrip(PowerStripId, ApiKey, Socket, StartDate, EndDate) ->
 	Result = query(Sql),
 	case Result of
 		[] ->
-			send(Socket, "{\"powerstripid\":\""+PowerStripId+"\", \"result\":false}");
+			send(Socket, "{\"powerstripid\":"+PowerStripId+", \"result\":false}");
 		_Else ->
 			Data = [ A || {A} <- Result],
-			send(Socket, "{\"powerstripid\":\""+PowerStripId+"\", \"data\":"++Data++"}")
+			send(Socket, "{\"powerstripid\":"+PowerStripId+", \"data\":["++string:join(Data, ",")++"]}")
 	end.
 		
 getConsumptionSocket(SocketId, ApiKey, Socket, StartDate, EndDate) ->
@@ -229,7 +230,7 @@ getConsumptionSocket(SocketId, ApiKey, Socket, StartDate, EndDate) ->
 				inner join \"powerStrip_powerstrip\" as psp
 				on psc.\"powerStrip_id\" = psp.id
 				where psc.socket_id = '"++SocketId++"'
-				and \"activePower\" BETWEEN '"++StartDate++"' AND '"++EndDate++"'
+				and \"timeStamp\" BETWEEN '"++StartDate++"' AND '"++EndDate++"'
 			) as atu
 			on atu.user_id = au.id
 			where au.apikey = '"++ApiKey++"'
@@ -238,7 +239,7 @@ getConsumptionSocket(SocketId, ApiKey, Socket, StartDate, EndDate) ->
 	",
 	Result = query(Sql),
 	Data = [ A || {A} <- Result],
-	Message = "{socketid:\""++SocketId++"\", data:"++Data++"}",
+	Message = "{socketid:"++SocketId++", data:"++Data++"}",
 	send(Socket, Message).
 	
 setName(SocketId, ApiKey, Socket, NewName) ->
@@ -267,14 +268,14 @@ setName(SocketId, ApiKey, Socket, NewName) ->
 		[{SocketId}] ->
 			case query(Sql_setName) of
 				1 ->
-					send(Socket, "{\"socketid\":\""++SocketId++"\",\"result\":true}");
+					send(Socket, "{\"socketid\":"++SocketId++",\"result\":true}");
 				_Else ->
 					io:fwrite("Error when trying to rename Socket\n"),
-					send(Socket, "{\"socketid\":\""++SocketId++"\",\"result\":false}")
+					send(Socket, "{\"socketid\":"++SocketId++",\"result\":false}")
 			end;
 		_Else ->
 			io:fwrite("Error when trying to rename Socket\n"),
-			send(Socket, "{\"socketid\":\""++SocketId++"\",\"result\":false}")
+			send(Socket, "{\"socketid\":"++SocketId++",\"result\":false}")
 	end.
 
 switch(SocketId, ApiKey, Socket, Switch) ->
@@ -295,7 +296,7 @@ switch(SocketId, ApiKey, Socket, Switch) ->
 	",
 	case query(Sql_serialId) of
 		[{SerialID, SocketId, SocketNumber}] ->
-			send(Socket, "{\"socketid\":\""++SocketId++"\",\"result\":true}"),
+			send(Socket, "{\"socketid\":"++SocketId++",\"result\":true}"),
 			controlSocket(SerialID, SocketNumber, Switch);
 		_Else ->
 			io:fwrite("Error when trying to find PowerStrip_serialID\n")
