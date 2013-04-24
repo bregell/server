@@ -302,7 +302,7 @@ query(Sql) ->
 		{selected,_,N} ->
 			N;
 		{error, _} ->
-			io:fwrite("Error at sql query\n")
+			io:fwrite("Error at sql query\n"),
 			[{{}}]
 	end.
 	
