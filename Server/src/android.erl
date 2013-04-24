@@ -45,7 +45,7 @@ decode([Package], Socket) ->
 							getSockets(PowerStripId, ApiKey, Socket);
 						_Else -> 
 							io:fwrite("Bad data for getSockets request\n"),
-							send(Socket, "{\"powerstripid\":\""++PowerStripId++"\",\"result\":false}")
+							send(Socket, "{\"powerstripid\":"++PowerStripId++",\"result\":false}")
 					end;
 				"consumption" ->
 					case Data of
@@ -62,7 +62,7 @@ decode([Package], Socket) ->
 							getConsumptionPowerStrip(PowerStripId, ApiKey, Socket, StartTimestamp, EndTimestamp);
 						_Else -> 
 							io:fwrite("Bad data for getConsumptionPowerStrip request\n"),
-							send(Socket, "{\"powerstripid\":\""++PowerStripId++"\",\"result\":false}")
+							send(Socket, "{\"powerstripid\":"++PowerStripId++",\"result\":false}")
 					end
 			end;	
 		[{"socketid",SocketId},{"request",Request}|Data] ->
@@ -77,7 +77,7 @@ decode([Package], Socket) ->
 							getConsumptionSocket(SocketId, ApiKey, Socket, StartDate, EndDate);
 						_Else -> 
 							io:fwrite("Bad data for getConsumptionSocket request\n"),
-							send(Socket, "{\"socketid\":\""++SocketId++"\",\"result\":false}")
+							send(Socket, "{\"socketid\":"++SocketId++",\"result\":false}")
 					end;
 				"setname" ->
 					case Data of
@@ -88,7 +88,7 @@ decode([Package], Socket) ->
 							setName(SocketId, ApiKey, Socket, NewName);
 						_Else -> 
 							io:fwrite("Bad data for setName request\n"),
-							send(Socket, "{\"socketid\":\""++SocketId++"\",\"result\":false}")
+							send(Socket, "{\"socketid\":"++SocketId++",\"result\":false}")
 					end;
 				"ournon" ->
 					case Data of
@@ -98,7 +98,7 @@ decode([Package], Socket) ->
 							switch(SocketId, ApiKey, Socket, "1");
 						_Else -> 
 							io:fwrite("Bad data for turnOn request\n"),
-							send(Socket, "{\"socketid\":\""++SocketId++"\",\"result\":false}")
+							send(Socket, "{\"socketid\":"++SocketId++",\"result\":false}")
 					end;
 				"turnoff" ->
 					case Data of
@@ -108,7 +108,7 @@ decode([Package], Socket) ->
 							switch(SocketId, ApiKey, Socket, "0");
 						_Else -> 
 							io:fwrite("Bad data for turnOff request\n"),
-							send(Socket, "{\"socketid\":\""++SocketId++"\",\"result\":false}")
+							send(Socket, "{\"socketid\":"++SocketId++",\"result\":false}")
 					end
 			end;
 		_Else ->
@@ -209,10 +209,11 @@ getConsumptionPowerStrip(PowerStripId, ApiKey, Socket, StartDate, EndDate) ->
 	Result = query(Sql),
 	case Result of
 		[] ->
-			send(Socket, "{\"powerstripid\":"+PowerStripId+", \"result\":false}");
+			send(Socket, "{\"powerstripid\":"++PowerStripId++", \"result\":false}");
 		_Else ->
 			Data = [ A || {A} <- Result],
-			send(Socket, "{\"powerstripid\":"+PowerStripId+", \"data\":["++string:join(Data, ",")++"]}")
+			Array = string:join(Data, ","),
+			send(Socket, "{\"powerstripid\":"++PowerStripId++", \"data\":["++Array++"]}")
 	end.
 		
 getConsumptionSocket(SocketId, ApiKey, Socket, StartDate, EndDate) ->

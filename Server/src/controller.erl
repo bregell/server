@@ -80,7 +80,7 @@ send(PowerStrip_SerialId, Status) ->
 				ok ->
 					spawn(odbc_unit, input, [sql_builder:new_status(PowerStrip_SerialId, string:tokens(Status, ";"))]),
 					io:fwrite("Sent: "),
-					io:fwrite(PowerStrip_SerialId++":"++Status++"\n");
+					io:fwrite(PowerStrip_SerialId++":"++Status);
 				{error, _} ->
 					io:fwrite("Could not send to: "++PowerStrip_SerialId++"\n")
 			end;
@@ -97,7 +97,7 @@ send(PowerStrip_SerialId, Status, RequestSocket) ->
 				ok ->
 					spawn(odbc_unit, input, [sql_builder:new_status(PowerStrip_SerialId, string:tokens(Status, ";"))]),
 					io:fwrite("Sent: "),
-					io:fwrite(PowerStrip_SerialId++":"++Status++"\n"),
+					io:fwrite(PowerStrip_SerialId++":"++Status),
 					case gen_tcp:send(RequestSocket, "switchRequestTrue\n") of
 						ok ->
 							io:fwrite("Switch Request ok ack sent\n");
