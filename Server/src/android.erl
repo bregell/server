@@ -155,7 +155,7 @@ getSockets(PowerStripId, ApiKey, Socket) ->
 					select socketid, name
 					from 
 					(
-						select pss.id, name, user_id
+						select pss.id as socketid, name, user_id
 						from \"powerStrip_socket\" as pss
 						inner join \"powerStrip_powerstrip\" as psp
 						on \"powerStrip_id\" = psp.id
@@ -303,6 +303,7 @@ query(Sql) ->
 			N;
 		{error, _} ->
 			io:fwrite("Error at sql query\n")
+			[{{}}]
 	end.
 	
 send(Socket, Message) ->
