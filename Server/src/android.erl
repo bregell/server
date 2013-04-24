@@ -54,8 +54,11 @@ decode([Package], Socket) ->
 							{"startdate", StartDate},
 							{"enddate", EndDate}
 						] ->
-							%%2010-01-01 00-00-00 
-							getConsumptionPowerStrip(PowerStripId, ApiKey, Socket, StartDate, EndDate);
+							[SDate,STime] = string:tokens(StartDate, " "),
+							StartTimestamp = SDate++" "++string:join(string:tokens(STime, "-"), ":"),
+							[EDate,ETime] = string:tokens(EndDate, " "),
+							EndTimestamp = EDate++" "++string:join(string:tokens(ETime, "-"), ":"),
+							getConsumptionPowerStrip(PowerStripId, ApiKey, Socket, StartTimestamp, EndTimestamp);
 						_Else -> 
 							io:fwrite("Bad data for getConsumptionPowerStrip request\n"),
 							send(Socket, "{\"powerstripid\":\""++PowerStripId++"\",\"result\":false}")

@@ -90,7 +90,7 @@ receiver(Socket) ->
 							analyzer ! {read, PowerStrip_SerialId};
 						[PowerStrip_SerialId, Status] ->
 							spawn(odbc_unit, input, [sql_builder:new_status(PowerStrip_SerialId, string:tokens(Status, ";"))]),
-							controller ! {send,{PowerStrip_SerialId, Status}};
+							controller ! {send,{PowerStrip_SerialId, Status, Socket}};
 						_ ->
 							io:fwrite("Error no matching case, tcp packet thrown away.\n"),
 							io:fwrite(Package),

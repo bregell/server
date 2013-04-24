@@ -8,7 +8,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/0,input/1,send/2]).
+-export([start/0,input/1,send/2,send/3]).
 
 
 %% ====================================================================
@@ -58,7 +58,9 @@ mailbox() ->
 			input ! {new, {PowerStrip_SerialId, Socket}};
 		{send, {PowerStrip_SerialId, Status}} ->
 			spawn_link(?MODULE, send, [PowerStrip_SerialId, Status]);
-		_ ->
+		{send, {PowerStrip_SerialId, Status, RequestSocket}} ->
+			spawn_link(?MODULE, send, [PowerStrip_SerialId, Status, RequestSocket]);
+		_->
 			io:fwrite("Bad Data\n")
 	end,
 	mailbox().
@@ -80,6 +82,34 @@ send(PowerStrip_SerialId, Status) ->
 					io:fwrite(PowerStrip_SerialId++":"++Status++"\n");
 				{error, _} ->
 					io:fwrite("Could not send to: "++PowerStrip_SerialId++"\n")
+			end;
+		{not_found} ->  
+			io:fwrite("Socket not found \n")
+	end.
+	
+send(PowerStrip_SerialId, Status, RequestSocket) ->
+	input ! {get_socket, {PowerStrip_SerialId, self()}},
+	receive 
+		{found, Socket} ->
+			io:fwrite("Found\n"),
+			case gen_tcp:send(Socket, PowerStrip_SerialId++":"++Status) of
+				ok ->
+					io:fwrite("Sent: "),
+					io:fwrite(PowerStrip_SerialId++":"++Status++"\n"),
+					case gen_tcp:send(RequestSocket, "swichRequestTrue\n") of
+						ok ->
+							io:fwrite("Switch Request ok ack sent\n");
+						_Else ->
+							io:fwrite("Switch Request ok ack not sent\n")
+					end;
+				{error, _} ->
+					io:fwrite("Could not send to: "++PowerStrip_SerialId++"\n"),
+					case gen_tcp:send(RequestSocket, "swichRequestFailed\n") of
+							ok ->
+							io:fwrite("Switch Request fail ack sent\n");
+						_Else ->
+							io:fwrite("Switch Request fail ack not sent\n")
+					end
 			end;
 		{not_found} ->  
 			io:fwrite("Socket not found \n")
