@@ -53,7 +53,8 @@ listener(Msg, Listen) ->
 		{ok, Socket} ->
 			Msg ! new_listener,
 			receiver(Socket),
-			gen_tcp:close(Socket);
+			gen_tcp:close(Socket),
+			io:fwrite("\n");
 		{error, Reason} ->
 			io:fwrite("Could not accept "),
 			io:fwrite(Reason),
@@ -88,13 +89,8 @@ receiver(Socket) ->
 							spawn(sql_builder, input, [PowerStrip_SerialId,string:tokens(Data, ";"),string:tokens(Status, ";"),string:tokens(Date, ";"),string:tokens(Time, ";")]),
 							analyzer ! {read, PowerStrip_SerialId};
 						[PowerStrip_SerialId, Status] ->
-							odbc_unit:input(sql_builder:new_status(PowerStrip_SerialId, string:tokens(Status, ";"))),
+							spawn(odbc_unit, input, [sql_builder:new_status(PowerStrip_SerialId, string:tokens(Status, ";"))]),
 							controller ! {send,{PowerStrip_SerialId, Status}};
-						[PowerStrip_SerialId] ->
-							controller ! {new,{PowerStrip_SerialId, Socket}},
-							io:fwrite("One liner.\n"),
-							io:fwrite(Package),
-							io:fwrite("\n");
 						_ ->
 							io:fwrite("Error no matching case, tcp packet thrown away.\n"),
 							io:fwrite(Package),

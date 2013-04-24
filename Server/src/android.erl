@@ -26,7 +26,7 @@ decode([Package], Socket) ->
 							login(UserName, Password, Socket);
 						_Else ->
 							io:fwrite("Bad data for login request\n"),
-							send(Socket, "{\"socketid\":\""++UserName++"\",\"result\":false}")
+							send(Socket, "{\"username\":\""++UserName++"\",\"result\":false}")
 					end;
 				"powerstrips" ->
 					case Data of 
@@ -34,7 +34,7 @@ decode([Package], Socket) ->
 							getPowerStrips(UserName, ApiKey, Socket);
 						_Else ->
 							io:fwrite("Bad data for getPowerStrips request\n"),
-							send(Socket, "{\"socketid\":\""++UserName++"\",\"result\":false}")
+							send(Socket, "{\"username\":\""++UserName++"\",\"result\":false}")
 					end
 			end;	
 		[{"powerstripid",PowerStripId},{"request",Request}|Data] ->
@@ -45,7 +45,7 @@ decode([Package], Socket) ->
 							getSockets(PowerStripId, ApiKey, Socket);
 						_Else -> 
 							io:fwrite("Bad data for getSockets request\n"),
-							send(Socket, "{\"socketid\":\""++PowerStripId++"\",\"result\":false}")
+							send(Socket, "{\"powerstripid\":\""++PowerStripId++"\",\"result\":false}")
 					end;
 				"consumption" ->
 					case Data of
@@ -54,11 +54,11 @@ decode([Package], Socket) ->
 							{"startdate", StartDate},
 							{"enddate", EndDate}
 						] ->
-							
+							%%2010-01-01 00-00-00 
 							getConsumptionPowerStrip(PowerStripId, ApiKey, Socket, StartDate, EndDate);
 						_Else -> 
 							io:fwrite("Bad data for getConsumptionPowerStrip request\n"),
-							send(Socket, "{\"socketid\":\""++PowerStripId++"\",\"result\":false}")
+							send(Socket, "{\"powerstripid\":\""++PowerStripId++"\",\"result\":false}")
 					end
 			end;	
 		[{"socketid",SocketId},{"request",Request}|Data] ->
@@ -203,9 +203,13 @@ getConsumptionPowerStrip(PowerStripId, ApiKey, Socket, StartDate, EndDate) ->
 		) as t
 	",
 	Result = query(Sql),
-	Data = [ A || {A} <- Result],
-	Message = "{powerstripid:\""+PowerStripId+"\", data:"++Data++"}",
-	send(Socket, Message).
+	case Result of
+		[] ->
+			send(Socket, "{\"powerstripid\":\""+PowerStripId+"\", \"result\":false}");
+		_Else ->
+			Data = [ A || {A} <- Result],
+			send(Socket, "{\"powerstripid\":\""+PowerStripId+"\", \"data\":"++Data++"}")
+	end.
 		
 getConsumptionSocket(SocketId, ApiKey, Socket, StartDate, EndDate) ->
 	Sql = 

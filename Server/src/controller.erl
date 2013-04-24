@@ -34,20 +34,20 @@ input(Data) ->
 		{new, {PowerStrip_SerialId,Socket}} ->
 			case lists:keymember(PowerStrip_SerialId, 1, Data)of
 				true ->
-					New_Data = lists:keyreplace(PowerStrip_SerialId, 1, Data, {PowerStrip_SerialId, Socket});
+					input(lists:keyreplace(PowerStrip_SerialId, 1, Data, {PowerStrip_SerialId, Socket}));
 				false ->
-					New_Data = lists:append(Data, [{PowerStrip_SerialId, Socket}])
+					input(lists:append(Data, [{PowerStrip_SerialId, Socket}]))
 			end;
 		{get_socket, {PowerStrip_SerialId, Pid}} ->
-			New_Data = Data,
 			case lists:keyfind(PowerStrip_SerialId, 1, Data) of
 				{PowerStrip_SerialId, Socket} ->
-					Pid ! {found, Socket};
+					Pid ! {found, Socket},
+					input(Data);
 				false ->
-					Pid ! {not_found}
+					Pid ! {not_found},
+					input(Data)
 			end
-	end,
-	input(New_Data).		
+	end.		
 
 %% @doc
 %% Waits for messages and relays them to the right process.
