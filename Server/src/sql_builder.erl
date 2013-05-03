@@ -142,9 +142,8 @@ get_timers() ->
 		"SELECT \"serialId\", socket, socket_id, mode FROM(
 			SELECT socket, socket_id, mode, \"powerStrip_id\", status FROM(
 				SELECT socket_id, mode 
-				FROM schedule_timer, schedule_socket_has_timer 
-				WHERE timer_id = id 
-				AND active = TRUE 
+				FROM \"powerStrip_schedule_timer\", \"powerStrip_socket_schedule_timer\" 
+				WHERE schedule_timer_id = id 
 				AND time BETWEEN (NOW() - INTERVAL '5' MINUTE) AND NOW()
 			) AS foo
 			INNER JOIN \"powerStrip_socket\"
@@ -164,17 +163,17 @@ get_repeaters() ->
 			(
 				SELECT * FROM
 				(
-					SELECT id as repeat_id, mode FROM 
+					SELECT id as schedule_repeat_id, mode FROM 
 					(
 						SELECT sr.id, activefrom, activeto, day, active, action_one_time, action_one_mode as mode FROM 
-						schedule_day as sd, schedule_repeat as sr, schedule_repeat_has_day as srhd
+						\"powerStrip_schedule_day\" as sd, \"powerStrip_schedule_repeat\" as sr, \"powerStrip_schedule_repeat_days\" as srhd
 						WHERE
 						sr.id = srhd.repeat_id
 						AND
 						srhd.day_id = sd.id
 						UNION 
 						SELECT sr.id, activefrom, activeto, NULL as day, active, action_one_time, action_one_mode as mode FROM 
-						schedule_repeat as sr, schedule_repeat_has_day as srhd
+						\"powerStrip_schedule_repeat\" as sr, \"powerStrip_schedule_repeat_days\" as srhd
 						WHERE 
 						sr.id <> srhd.repeat_id
 					) as one
@@ -185,7 +184,7 @@ get_repeaters() ->
 					AND(
 						day IS NULL
 						OR
-						day = CAST(to_char(NOW(), 'D') as int)
+						day = CAST(to_char(NOW(), 'Day') as int)
 					)
 					AND
 					activefrom <= NOW()
@@ -198,14 +197,14 @@ get_repeaters() ->
 					SELECT id as socket_id, mode FROM 
 					(
 						SELECT sr.id, activefrom, activeto, day, active, action_two_time, action_two_mode as mode FROM 
-						schedule_day as sd, schedule_repeat as sr, schedule_repeat_has_day as srhd
+						\"powerStrip_schedule_day\" as sd, \"powerStrip_schedule_repeat\" as sr, \"powerStrip_schedule_repeat_days\" as srhd
 						WHERE
 						sr.id = srhd.repeat_id
 						AND
 						srhd.day_id = sd.id
 						UNION 
 						SELECT sr.id, activefrom, activeto, NULL as day, active, action_two_time, action_two_mode as mode FROM 
-						schedule_repeat as sr, schedule_repeat_has_day as srhd
+						\"powerStrip_schedule_repeat\" as sr, \"powerStrip_schedule_repeat_days\" as srhd
 						WHERE 
 						sr.id <> srhd.repeat_id
 					) as two
@@ -216,7 +215,7 @@ get_repeaters() ->
 					AND(
 					day IS NULL
 					OR
-					day = CAST(to_char(NOW(), 'D') as int)
+					day = CAST(to_char(NOW(), 'Day') as int)
 					)
 					AND
 					activefrom <= NOW()
@@ -226,7 +225,7 @@ get_repeaters() ->
 					activeto IS NULL
 					)
 				) as repeat
-				NATURAL JOIN schedule_socket_has_repeat
+				NATURAL JOIN \"powerStrip_socket_schedule_repeat\"
 			) AS foo
 			INNER JOIN \"powerStrip_socket\"
 			ON socket_id = id

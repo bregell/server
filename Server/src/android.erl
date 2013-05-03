@@ -64,6 +64,17 @@ decode([Package], Socket) ->
 							io:fwrite("Bad data for getConsumptionPowerStrip request\n"),
 							send(Socket, "{\"powerstripid\":"++PowerStripId++",\"result\":false}")
 					end
+				"setname" ->
+					case Data of
+						[
+							{"apikey", ApiKey},
+							{"newname", NewName}
+						] ->
+							setPsName(PowerStripId, ApiKey, Socket, NewName);
+						_Else -> 
+							io:fwrite("Bad data for setName request\n"),
+							send(Socket, "{\"powerstripid\":"++PowerStripId++",\"result\":false}")
+					end;
 			end;	
 		[{"socketid",SocketId},{"request",Request}|Data] ->
 			case Request of
@@ -124,7 +135,7 @@ login(UserName, Password, Socket) ->
 			select '"++UserName++"' as username, apikey, true as login 
 			from auth_user
 			where username = '"++UserName++"'
-			and password = '"++Password++"'
+			and androidpassword = '"++Password++"'
 		) as t
 	",
 	queryAndSend(Sql, Socket).
@@ -277,6 +288,39 @@ setName(SocketId, ApiKey, Socket, NewName) ->
 		_Else ->
 			io:fwrite("Error when trying to rename Socket\n"),
 			send(Socket, "{\"socketid\":"++SocketId++",\"result\":false}")
+	end.
+	
+setPsName(PowerStripId, ApiKey, Socket, NewName) ->
+	Sql_getUser = 
+	"
+		select powerstripid
+		from 
+		\"powerStrip_powerstrip\" as t
+		inner join auth_user as au
+		on au.id = t.user_id
+		where 
+		t.id = '"++PowerStripId++"'
+		and
+		apikey = '"++ApiKey++"'
+	",
+	Sql_setName =
+	"
+		UPDATE \"powerStrip_powerstrip\"
+		SET name='"++NewName++"'
+		WHERE id='"++PowerStripId++"'
+	",
+	case query(Sql_getUser) of
+		[{PowerStripId}] ->
+			case query(Sql_setName) of
+				1 ->
+					send(Socket, "{\"powerstripid\":"++PowerStripId++",\"result\":true}");
+				_Else ->
+					io:fwrite("Error when trying to rename PowerStrip\n"),
+					send(Socket, "{\"powerstripid\":"++PowerStripId++",\"result\":false}")
+			end;
+		_Else ->
+			io:fwrite("Error when trying to rename PowerStrip\n"),
+			send(Socket, "{\"powerstripid\":"++PowerStripId++",\"result\":false}")
 	end.
 
 switch(SocketId, ApiKey, Socket, Switch) ->
