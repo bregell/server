@@ -22,8 +22,10 @@ start() ->
 	case whereis(input) of 
 		undefined ->
 			register(input, spawn(?MODULE, input ,[])),
+			monitor(process, input),
 			mailbox();
 		_Else ->
+			monitor(process, input),
 			mailbox()
 	end.
 	
@@ -68,6 +70,9 @@ mailbox() ->
 			spawn(?MODULE, send, [PowerStrip_SerialId, Status]);
 		{send, {PowerStrip_SerialId, Status, RequestSocket}} ->
 			spawn(?MODULE, send, [PowerStrip_SerialId, Status, RequestSocket]);
+		{'DOWN',_,process,{input,_},_} ->
+			register(input, spawn(?MODULE, input ,[])),
+			monitor(process, input);
 		_->
 			io:fwrite("Bad Data\n")
 	end,

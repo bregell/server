@@ -112,6 +112,7 @@ loop(Listen) ->
 		new_listener ->
 			spawn(?MODULE, listener, [self(), Listen]);
 		_Else ->
-			io:fwrite("Bad Msg\n")
+			io:fwrite("Bad Msg\n")		
 	end,
 	loop(Listen).
+	
