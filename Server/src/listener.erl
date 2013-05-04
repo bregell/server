@@ -22,7 +22,7 @@
 %% @spec (Port) -> pid()
 %% Port = inet:portnumber() 
 start(Port)->
-	spawn_link(?MODULE, server, [Port]).
+	server(Port).
 
 %% @doc
 %% The actual server starts a listener and goes into the loop
@@ -32,7 +32,7 @@ start(Port)->
 server(Port) ->
 	case gen_tcp:listen(Port, [list, {active, false}, {packet, line}]) of
 		{ok, Listen} ->
-			spawn_link(?MODULE, listener, [self(), Listen]),
+			spawn(?MODULE, listener, [self(), Listen]),
 			loop(Listen);
 		{error, Reason} ->
 			io:fwrite("Error cannot listen on that port \n"),  
@@ -56,10 +56,10 @@ listener(Msg, Listen) ->
 			gen_tcp:close(Socket),
 			io:fwrite("\n");
 		{error, Reason} ->
+			Msg ! new_listener,
 			io:fwrite("Could not accept "),
 			io:fwrite(Reason),
-			io:fwrite("\n"),
-			Msg ! new_listener
+			io:fwrite("\n")
 	end.
 
 %% @doc
@@ -74,7 +74,6 @@ receiver(Socket) ->
 	%% @todo Add some good timeout value maybe.
 	case gen_tcp:recv(Socket, 0) of
 		{ok, Package} ->
-			io:fwrite("Recieve OK\n"),
 			%% Parse string into list
 			case string:tokens(Package, "#") of
 				["Android"|Data] ->
@@ -90,17 +89,17 @@ receiver(Socket) ->
 							analyzer ! {read, PowerStrip_SerialId};
 						[PowerStrip_SerialId, Status] ->
 							controller ! {send,{PowerStrip_SerialId, Status, Socket}};
-						_ ->
+						_Else ->
 							io:fwrite("Error no matching case, tcp packet thrown away.\n"),
 							io:fwrite(Package),
 							io:fwrite("\n")
 					end
 			end,
 			receiver(Socket);
-		{error, Reason} ->
-			io:fwrite("Could not recieve!\n"),
-			io:fwrite(Reason),
-			io:fwrite("\n")
+		{error, closed} ->
+			io:fwrite("Socket closed\n");
+		{error, _} ->
+			io:fwrite("Could not recieve!\n")
 	end.
 	
 %% @doc
@@ -111,8 +110,8 @@ receiver(Socket) ->
 loop(Listen) ->
 	receive
 		new_listener ->
-			spawn_link(?MODULE, listener, [self(), Listen]);
-		_ ->
-			io:fwrite("Bad Msg \n")
+			spawn(?MODULE, listener, [self(), Listen]);
+		_Else ->
+			io:fwrite("Bad Msg\n")
 	end,
 	loop(Listen).

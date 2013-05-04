@@ -8,7 +8,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/0,input/1,send/2,send/3]).
+-export([start/0,input/0,send/2,send/3]).
 
 
 %% ====================================================================
@@ -19,9 +19,14 @@
 %% Starts the controller and registers the process that handles the list of sockets.
 %% @end
 start() ->
-	Pid = spawn_link(?MODULE, input ,[[]]),
-	register(input, Pid),
-	mailbox().
+	case whereis(input) of 
+		undefined ->
+			register(input, spawn(?MODULE, input ,[])),
+			mailbox();
+		_Else ->
+			mailbox()
+	end.
+	
 
 %% @doc
 %% Handles a list of tuples and waits for messages.
@@ -29,6 +34,9 @@ start() ->
 %% @spec (Data) -> [tuple()] | message()
 %% Data = [tuple()] | [] 
 %% @todo Implement this in mnesia or orddict
+input() ->
+	input([]).
+	
 input(Data) ->
 	receive
 		{new, {PowerStrip_SerialId,Socket}} ->
@@ -57,9 +65,9 @@ mailbox() ->
 		{new, {PowerStrip_SerialId, Socket}} ->
 			input ! {new, {PowerStrip_SerialId, Socket}};
 		{send, {PowerStrip_SerialId, Status}} ->
-			spawn_link(?MODULE, send, [PowerStrip_SerialId, Status]);
+			spawn(?MODULE, send, [PowerStrip_SerialId, Status]);
 		{send, {PowerStrip_SerialId, Status, RequestSocket}} ->
-			spawn_link(?MODULE, send, [PowerStrip_SerialId, Status, RequestSocket]);
+			spawn(?MODULE, send, [PowerStrip_SerialId, Status, RequestSocket]);
 		_->
 			io:fwrite("Bad Data\n")
 	end,

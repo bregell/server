@@ -63,7 +63,7 @@ decode([Package], Socket) ->
 						_Else -> 
 							io:fwrite("Bad data for getConsumptionPowerStrip request\n"),
 							send(Socket, "{\"powerstripid\":"++PowerStripId++",\"result\":false}")
-					end
+					end;
 				"setname" ->
 					case Data of
 						[
@@ -74,7 +74,7 @@ decode([Package], Socket) ->
 						_Else -> 
 							io:fwrite("Bad data for setName request\n"),
 							send(Socket, "{\"powerstripid\":"++PowerStripId++",\"result\":false}")
-					end;
+					end
 			end;	
 		[{"socketid",SocketId},{"request",Request}|Data] ->
 			case Request of
