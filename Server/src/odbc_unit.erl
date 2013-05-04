@@ -21,8 +21,9 @@
 %% @spec (Sql) -> ({ok,[tuple()]} | {error, Reason})
 %% Sql = [string()]
 input(Sql) ->
-	{ok, Conn} = odbc:connect("DSN=PostgreSQL30", []),
-	Function = fun(A) -> (try (odbc:sql_query(Conn, A)) of
+	case odbc:connect("DSN=PostgreSQL30", []) of 
+		{ok, Conn} ->
+			Function = fun(A) -> (try (odbc:sql_query(Conn, A)) of
 							  {updated, N} ->
 								{updated, N};
 							  {selected, C, R} ->
@@ -33,10 +34,13 @@ input(Sql) ->
 							 {error, Reason} ->
 								{error, Reason}
 						 end) end,
-	Return = [Function(N) || N <- Sql],
-	odbc:disconnect(Conn),
-	{ok, Return}.
-
+			Return = [Function(N) || N <- Sql],
+			odbc:disconnect(Conn),
+			{ok, Return};
+		{error,Reason} ->
+			{ok, [{error, Reason}]}
+	end.
+	
 %% @doc 
 %% Takes a list of SQL Strings and sends them to the database as a bulk operation.
 %% Might be harder to find errors, but faster.

@@ -22,7 +22,7 @@ start() ->
 mailbox() ->
 	receive
 		{read, PowerStrip_SerialId} ->
-			spawn_link(?MODULE, worker, [PowerStrip_SerialId, 24])
+			spawn(?MODULE, worker, [PowerStrip_SerialId, 24])
 	end,
 	mailbox().
 
@@ -43,7 +43,12 @@ worker(PowerStrip_SerialId, Length) ->
 				end,
 			Status_calc = [Bool_to_int(N) || N <- Status_bools],
 			Status_out = [if X==Y -> "D"; Y=="0"-> "D"; true -> X end || {X,Y} <- lists:zip(Status_calc, Status_now)],
-			controller ! {send,{PowerStrip_SerialId, string:join(Status_out, ";")}}
+			case Status_out of
+				["D","D","D","D"] ->
+					ok;
+				_Else ->
+					controller ! {send,{PowerStrip_SerialId, string:join(Status_out, ";")}}
+			end
 	catch 
 		{error,_} ->
 			io:fwrite("Error when sending to SQL_builder\n");
@@ -55,7 +60,7 @@ worker(PowerStrip_SerialId, Length) ->
 analyzer(Answer) ->
 	{selected,_,Data} = Answer,
 	[Sorted] = split(lists:keysort(2,Data), [], length(Data)),
-	lists:reverse([lists:member(true, [Y >= 50 || {_,_,_,Y} <- N]) || N <- Sorted]).
+	lists:reverse([lists:member(true, [Y >= 0 || {_,_,_,Y} <- N]) || N <- Sorted]).
 
 split(List, [], Length) when length(List) < Length div 4 ->
 	[List];
@@ -72,4 +77,3 @@ split(List, [], Length) ->
 split(List, Ans, Length) when length(List) >= Length div 4 ->
 	{X,Y} = lists:split(Length div 4, List),
 	split(Y, [X|Ans], Length).
-

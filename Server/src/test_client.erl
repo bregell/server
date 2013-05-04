@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/1,start/2,start/3,worker/3,send/4,receiver/2]).
+-export([start/0,start/1,start/2,start/3,worker/3,send/4,receiver/2]).
 
 
 
@@ -20,6 +20,10 @@
 %% @end
 %% @spec (Input) -> any()
 %% Input = string()
+start() ->
+	spawn(test_client, start, ["bregell.mine.nu", 39500, "SN-ANDRO1"]),
+	spawn(test_client, start, ["bregell.mine.nu", 39500, "SN-ANDRO2"]).
+	
 start(PowerStrip_Id) ->
 	start(localhost, 39500, PowerStrip_Id).
 
@@ -40,11 +44,11 @@ start(Adress, PowerStrip_Id) ->
 %% Port = inet:portnumber()
 %% Input = string()
 start(Address, Port, PowerStrip_Id) ->
-	case gen_tcp:connect(Address, Port, [list, {active, false}, {packet, 0}]) of
+	case gen_tcp:connect(Address, Port, [list, {active, false}, {packet, line}]) of
 		{ok, Socket} ->
 			Pid = spawn_link(?MODULE, worker, [Socket, PowerStrip_Id, ["1","1","1","1"]]),
-			spawn_link(?MODULE, receiver, [Socket, Pid]),
-			Pid ! start;
+			Pid ! start,
+			receiver(Socket, Pid);
 		{error, Reason} ->
 			io:fwrite("Error: "),
 			io:fwrite(Reason)
@@ -61,7 +65,7 @@ start(Address, Port, PowerStrip_Id) ->
 send(Msg, Socket, PowerStrip_Id, Status) ->
 	%% Create random data
 	random:seed(now()),
-	Data = [if S=="1"-> N; true -> 0 end|| {N,S} <- lists:zip([100+random:uniform(100), 200+random:uniform(300), 400+random:uniform(200), 200+random:uniform(100)],Status)],
+	Data = [if S=="1"-> N; true -> 0 end|| {N,S} <- lists:zip([100+random:uniform(50), 200+random:uniform(100), 300+random:uniform(150), 400+random:uniform(50)],Status)],
 	Convert = fun(A) -> lists:map(fun(B) -> integer_to_list(B) end, A) end,
 	
 	%% Create time

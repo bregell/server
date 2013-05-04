@@ -8,7 +8,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/0,input/1,send/2]).
+-export([start/0,input/0,send/2,send/3]).
 
 
 %% ====================================================================
@@ -19,9 +19,16 @@
 %% Starts the controller and registers the process that handles the list of sockets.
 %% @end
 start() ->
-	Pid = spawn_link(?MODULE, input ,[[]]),
-	register(input, Pid),
-	mailbox().
+	case whereis(input) of 
+		undefined ->
+			register(input, spawn(?MODULE, input ,[])),
+			monitor(process, input),
+			mailbox();
+		_Else ->
+			monitor(process, input),
+			mailbox()
+	end.
+	
 
 %% @doc
 %% Handles a list of tuples and waits for messages.
@@ -29,25 +36,28 @@ start() ->
 %% @spec (Data) -> [tuple()] | message()
 %% Data = [tuple()] | [] 
 %% @todo Implement this in mnesia or orddict
+input() ->
+	input([]).
+	
 input(Data) ->
 	receive
 		{new, {PowerStrip_SerialId,Socket}} ->
 			case lists:keymember(PowerStrip_SerialId, 1, Data)of
 				true ->
-					New_Data = lists:keyreplace(PowerStrip_SerialId, 1, Data, {PowerStrip_SerialId, Socket});
+					input(lists:keyreplace(PowerStrip_SerialId, 1, Data, {PowerStrip_SerialId, Socket}));
 				false ->
-					New_Data = lists:append(Data, [{PowerStrip_SerialId, Socket}])
+					input(lists:append(Data, [{PowerStrip_SerialId, Socket}]))
 			end;
 		{get_socket, {PowerStrip_SerialId, Pid}} ->
-			New_Data = Data,
 			case lists:keyfind(PowerStrip_SerialId, 1, Data) of
 				{PowerStrip_SerialId, Socket} ->
-					Pid ! {found, Socket};
+					Pid ! {found, Socket},
+					input(Data);
 				false ->
-					Pid ! {not_found}
+					Pid ! {not_found},
+					input(Data)
 			end
-	end,
-	input(New_Data).		
+	end.		
 
 %% @doc
 %% Waits for messages and relays them to the right process.
@@ -57,8 +67,13 @@ mailbox() ->
 		{new, {PowerStrip_SerialId, Socket}} ->
 			input ! {new, {PowerStrip_SerialId, Socket}};
 		{send, {PowerStrip_SerialId, Status}} ->
-			spawn_link(?MODULE, send, [PowerStrip_SerialId, Status]);
-		_ ->
+			spawn(?MODULE, send, [PowerStrip_SerialId, Status]);
+		{send, {PowerStrip_SerialId, Status, RequestSocket}} ->
+			spawn(?MODULE, send, [PowerStrip_SerialId, Status, RequestSocket]);
+		{'DOWN',_,process,{input,_},_} ->
+			register(input, spawn(?MODULE, input ,[])),
+			monitor(process, input);
+		_->
 			io:fwrite("Bad Data\n")
 	end,
 	mailbox().
@@ -76,11 +91,47 @@ send(PowerStrip_SerialId, Status) ->
 			io:fwrite("Found\n"),
 			case gen_tcp:send(Socket, PowerStrip_SerialId++":"++Status) of
 				ok ->
+					spawn(odbc_unit, input, [sql_builder:new_status(PowerStrip_SerialId, string:tokens(Status, ";"))]),
 					io:fwrite("Sent: "),
-					io:fwrite(PowerStrip_SerialId++":"++Status++"\n");
+					io:fwrite(PowerStrip_SerialId++":"++Status);
 				{error, _} ->
 					io:fwrite("Could not send to: "++PowerStrip_SerialId++"\n")
 			end;
 		{not_found} ->  
 			io:fwrite("Socket not found \n")
+	end.
+	
+send(PowerStrip_SerialId, Status, RequestSocket) ->
+	input ! {get_socket, {PowerStrip_SerialId, self()}},
+	receive 
+		{found, Socket} ->
+			io:fwrite("Found\n"),
+			case gen_tcp:send(Socket, PowerStrip_SerialId++":"++Status) of
+				ok ->
+					spawn(odbc_unit, input, [sql_builder:new_status(PowerStrip_SerialId, string:tokens(Status, ";"))]),
+					io:fwrite("Sent: "),
+					io:fwrite(PowerStrip_SerialId++":"++Status),
+					case gen_tcp:send(RequestSocket, "switchRequestTrue\n") of
+						ok ->
+							io:fwrite("Switch Request ok ack sent\n");
+						_Else ->
+							io:fwrite("Switch Request ok ack not sent\n")
+					end;
+				{error, _} ->
+					io:fwrite("Could not send to: "++PowerStrip_SerialId++"\n"),
+					case gen_tcp:send(RequestSocket, "switchRequestFailed\n") of
+							ok ->
+							io:fwrite("Switch Request fail ack sent\n");
+						_Else ->
+							io:fwrite("Switch Request fail ack not sent\n")
+					end
+			end;
+		{not_found} ->  
+			io:fwrite("Socket not found \n"),
+			case gen_tcp:send(RequestSocket, "switchRequestFailed\n") of
+				ok ->
+					io:fwrite("Switch Request fail ack sent\n");
+				_Else ->
+					io:fwrite("Switch Request fail ack not sent\n")
+			end
 	end.
