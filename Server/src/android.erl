@@ -179,7 +179,7 @@ getSockets(PowerStripId, ApiKey, Socket) ->
 					select socketid, name
 					from 
 					(
-						select pss.id as socketid, name, user_id
+						select pss.id as socketid, pss.name, user_id
 						from \"powerStrip_socket\" as pss
 						inner join \"powerStrip_powerstrip\" as psp
 						on \"powerStrip_id\" = psp.id
@@ -353,7 +353,7 @@ queryAndSend(Sql, Socket) ->
 		[{Message}] ->
 			send(Socket, Message);
 		[] ->
-			send(Socket, "Android#{\"status\":\"failed\"}")
+			send(Socket, "{\"status\":\"failed\"}")
 	end.
 	
 query(Sql) ->
