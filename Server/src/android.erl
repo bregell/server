@@ -274,7 +274,7 @@ setName(SocketId, ApiKey, Socket, NewName) ->
 		SET name='"++NewName++"'
 		WHERE id='"++SocketId++"'
 	",
-	{SocketId_Integer,_} = string:to_integer(SocketId)
+	{SocketId_Integer,_} = string:to_integer(SocketId),
 	case query(Sql_getUser) of
 		[{SocketId_Integer}] ->
 			case query(Sql_setName) of
