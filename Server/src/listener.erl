@@ -70,7 +70,7 @@ listener(Msg, Listen) ->
 %% Msg = pid() 
 %% Socket = socket()
 receiver(Socket) ->
-	io:fwrite("Waiting for package\n"),
+	%%io:fwrite("Waiting for package\n"),
 	%% @todo Add some good timeout value maybe.
 	case gen_tcp:recv(Socket, 0) of
 		{ok, Package} ->
@@ -78,14 +78,16 @@ receiver(Socket) ->
 			case string:tokens(Package, "#") of
 				["Android"|Data] ->
 					spawn(android, decode, [Data, Socket]);
+				["PowerStrip"|Data] ->
+					spawn(powerstrip, decode, [Data, Socket]);
 				_Else ->		
 					Output = string:tokens(Package, ":"),
 					case Output of
-						[PowerStrip_SerialId,Data,Status,Date,Time] ->
-							io:fwrite(Package),
+						[PowerStrip_SerialId,Power,Status,Date,Time] ->
+							%%io:fwrite(Package),
 							controller ! {new,{PowerStrip_SerialId,Socket}},
 							%% @issue Maybe cange this to some kind of message passing solution.
-							spawn(sql_builder, input, [[PowerStrip_SerialId,string:tokens(Data, ";"),string:tokens(Status, ";"),string:tokens(Date, ";"),string:tokens(Time, ";")]]),
+							spawn(sql_builder, input, [[PowerStrip_SerialId,string:tokens(Power, ";"),string:tokens(Status, ";"),string:tokens(Date, ";"),string:tokens(Time, ";")]]),
 							analyzer ! {read, PowerStrip_SerialId};
 						[PowerStrip_SerialId, Status] ->
 							controller ! {send,{PowerStrip_SerialId, Status, Socket}};
