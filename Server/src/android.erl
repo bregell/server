@@ -276,8 +276,9 @@ setName(SocketId, ApiKey, Socket, NewName) ->
 		SET name='"++NewName++"'
 		WHERE id='"++SocketId++"'
 	",
+	{SocketId_Integer,_} = string:to_integer(SocketId)
 	case query(Sql_getUser) of
-		[{SocketId}] ->
+		[{SocketId_Integer}] ->
 			case query(Sql_setName) of
 				1 ->
 					send(Socket, "{\"socketid\":"++SocketId++",\"result\":true}");
@@ -309,8 +310,9 @@ setPsName(PowerStripId, ApiKey, Socket, NewName) ->
 		SET name='"++NewName++"'
 		WHERE id='"++PowerStripId++"'
 	",
+	{PowerStripId_Integer,_} = string:to_integer(PowerStripId),
 	case query(Sql_getUser) of
-		[{PowerStripId}] ->
+		[{PowerStripId_Integer}] ->
 			case query(Sql_setName) of
 				1 ->
 					send(Socket, "{\"powerstripid\":"++PowerStripId++",\"result\":true}");
