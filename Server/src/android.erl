@@ -293,7 +293,7 @@ setName(SocketId, ApiKey, Socket, NewName) ->
 setPsName(PowerStripId, ApiKey, Socket, NewName) ->
 	Sql_getUser = 
 	"
-		select powerstripid
+		select t.id
 		from 
 		\"powerStrip_powerstrip\" as t
 		inner join auth_user as au
