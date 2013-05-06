@@ -4,7 +4,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([decode/2,query/1, login/3]).
+-export([decode/2]).
 
 
 
@@ -14,9 +14,7 @@
 decode([Package], Socket) ->
 	io:fwrite("Package data: "++Package),
 	Strip = fun(Str) -> string:sub_string(Str, 2, string:len(Str)-2) end,
-	Input = Strip(Package),
-	io:fwrite("Input data: "++Input++"\n"),
-	List = [{A,B} || [A,B] <- [string:tokens(A, ":") || A <- string:tokens(Input, ",")]],
+	List = [{A,B} || [A,B] <- [string:tokens(A, ":") || A <- string:tokens(Strip(Package), ",")]],
 	case List of
 		[{"username",UserName},{"request",Request}|Data] ->
 			case Request of 
@@ -294,7 +292,7 @@ setName(SocketId, ApiKey, Socket, NewName) ->
 setPsName(PowerStripId, ApiKey, Socket, NewName) ->
 	Sql_getUser = 
 	"
-		select powerstripid
+		select t.id
 		from 
 		\"powerStrip_powerstrip\" as t
 		inner join auth_user as au
