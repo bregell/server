@@ -149,9 +149,9 @@ getPowerStrips(UserName, ApiKey, Socket) ->
 				select array_to_json(array_agg(row_to_json(d))) as powerstrips
 				from
 				(
-					select k.id, \"serialId\" as serialid
+					select k.id, \"serialId\" as serialid, k.name 
 					from (
-						SELECT id, \"serialId\", user_id FROM \"powerStrip_powerstrip\"
+						SELECT id, \"serialId\", user_id, name FROM \"powerStrip_powerstrip\"
 					) as k
 					inner join auth_user 
 					on user_id = auth_user.id
