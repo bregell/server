@@ -84,10 +84,12 @@ receiver(Socket) ->
 					Output = string:tokens(Package, ":"),
 					case Output of
 						[PowerStrip_SerialId,Power,Status,Date,Time] ->
-							%%io:fwrite(Package),
 							controller ! {new,{PowerStrip_SerialId,Socket}},
-							%% @issue Maybe cange this to some kind of message passing solution.
-							spawn(sql_builder, input, [[PowerStrip_SerialId,string:tokens(Power, ";"),string:tokens(Status, ";"),string:tokens(Date, ";"),string:tokens(Time, ";")]]),
+							Power_list = string:tokens(Power, ";"),
+							Status_list = string:tokens(Status, ";"),
+							Date_list = string:tokens(Date, ";"),
+							Time_list = string:tokens(Time, ";"),
+							spawn(sql_builder, insert_from_powerstrip, [PowerStrip_SerialId,Power_list,Status_list,Date_list,Time_list]),							
 							analyzer ! {read, PowerStrip_SerialId};
 						[PowerStrip_SerialId, Status] ->
 							controller ! {send,{PowerStrip_SerialId, Status, Socket}};
@@ -112,9 +114,10 @@ receiver(Socket) ->
 loop(Listen) ->
 	receive
 		new_listener ->
-			spawn(?MODULE, listener, [self(), Listen]);
+			spawn(?MODULE, listener, [self(), Listen]),
+			loop(Listen);
 		_Else ->
-			io:fwrite("Bad Msg\n")		
-	end,
-	loop(Listen).
+			io:fwrite("Bad Msg\n"),
+			loop(Listen)
+	end.
 	

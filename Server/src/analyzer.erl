@@ -9,7 +9,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/0, worker/2, split/3, analyzer/1]).
+-export([start/0, worker/2, analyzer/1]).
 
 
 
@@ -27,53 +27,35 @@ mailbox() ->
 	mailbox().
 
 worker(PowerStrip_SerialId, Length) ->
-	try sql_builder:input({PowerStrip_SerialId, Length}) of
-		{ok,[Answer]} ->
-			{ok,[{selected,_,Status_data}]} = sql_builder:get_status(PowerStrip_SerialId),
-			Status_now = [integer_to_list(N) || {N} <- Status_data],
-			Status_bools = analyzer(Answer),
-			Bool_to_int = 
-				fun(A) 
-					 -> (case A of
-							 true ->
-								 "1";
-							 false ->
-								 "0"
-						 end) 
-				end,
-			Status_calc = [Bool_to_int(N) || N <- Status_bools],
-			Status_out = [if X==Y -> "D"; Y=="0"-> "D"; true -> X end || {X,Y} <- lists:zip(Status_calc, Status_now)],
-			case Status_out of
-				["D","D","D","D"] ->
-					ok;
-				_Else ->
-					controller ! {send,{PowerStrip_SerialId, string:join(Status_out, ";")}}
-			end
-	catch 
-		{error,_} ->
-			io:fwrite("Error when sending to SQL_builder\n");
-		_ -> 
-			io:fwrite("Strange data from SQL Module\n")
+	%% Get history
+	Result = sql_builder:get_history(PowerStrip_SerialId, Length),
+	%% Get current status
+	Status_current = sql_builder:get_status(PowerStrip_SerialId),
+	%% Convert status to string
+	Status_now = [integer_to_list(N) || {N} <- Status_current],
+	Status_bools = analyzer(Result),
+	Bool_to_int = 
+		fun(A) 
+			 -> (case A of
+					 true ->
+						 "1";
+					 false ->
+						 "0"
+				 end) 
+		end,
+	Status_calc = [Bool_to_int(N) || N <- Status_bools],
+	Status_out = [if X==Y -> "D"; Y=="0"-> "D"; true -> X end || {X,Y} <- lists:zip(Status_calc, Status_now)],
+	case Status_out of
+		["D","D","D","D"] ->
+			io:fwrite("D"),
+			ok;
+		_Else ->
+			controller ! {send,{PowerStrip_SerialId, string:join(Status_out, ";")}}
 	end.
 
-
 analyzer(Answer) ->
-	{selected,_,Data} = Answer,
-	[Sorted] = split(lists:keysort(2,Data), [], length(Data)),
-	lists:reverse([lists:member(true, [Y >= 0 || {_,_,_,Y} <- N]) || N <- Sorted]).
-
-split(List, [], Length) when length(List) < Length div 4 ->
-	[List];
-split(List, Ans, Length) when length(List) < Length div 4 ->
-	case List of
-		[] ->
-			[Ans];
-		_ ->
-			[List|Ans]
-	end;
-split(List, [], Length) ->
-	{X,Y} = lists:split(Length div 4, List),
-	split(Y, [X], Length);
-split(List, Ans, Length) when length(List) >= Length div 4 ->
-	{X,Y} = lists:split(Length div 4, List),
-	split(Y, [X|Ans], Length).
+	{Sub_List1, Sub_List2} = lists:split(length(Answer) div 2, Answer),
+	{List1, List2} = lists:split(length(Sub_List1) div 2, Sub_List1),
+	{List3, List4} = lists:split(length(Sub_List2) div 2, Sub_List2),
+	List = [List1,List2,List3,List4],
+	[lists:member(true, [Y >= 5 || {_,Y} <- N]) || N <- List].
