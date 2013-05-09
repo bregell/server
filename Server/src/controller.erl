@@ -8,7 +8,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/0,input/0,send/2,send/3]).
+-export([start/0,input/0,ack_list/0,send/2,send/3]).
 
 
 %% ====================================================================
@@ -21,13 +21,15 @@
 start() ->
 	case whereis(input) of 
 		undefined ->
-			register(input, spawn(?MODULE, input ,[])),
-			monitor(process, input),
-			mailbox();
-		_Else ->
-			monitor(process, input),
-			mailbox()
-	end.
+			register(input, spawn(?MODULE, input ,[]))
+	end,
+	monitor(process, input),
+	case whereis(ack_list) of 
+		undefined ->
+			register(ack_list, spawn(?MODULE, ack_list ,[]))	
+	end,
+	monitor(process, ack_list),
+	mailbox().
 	
 
 %% @doc
@@ -57,6 +59,23 @@ input(Data) ->
 					Pid ! {not_found},
 					input(Data)
 			end
+	end.
+
+ack_list() ->
+	ack_list([]).
+	
+ack_list(Data) ->
+	receive
+		{ack_request, {PowerStrip_SerialId, ReqestPid}} ->
+			ack_list(lists:append(Data, [{PowerStrip_SerialId, ReqestPid}]));
+		{find_ack, PowerStrip_SerialId} ->
+			case lists:keyfind(PowerStrip_SerialId, 1, Data) of
+				{PowerStrip_SerialId, ReqestPid} ->
+					ReqestPid ! ok,
+					ack_list(lists:delete({PowerStrip_SerialId,ReqestPid}, Data));
+				false ->
+					ack_list(Data)
+			end
 	end.		
 
 %% @doc
@@ -70,6 +89,8 @@ mailbox() ->
 			spawn(?MODULE, send, [PowerStrip_SerialId, Status]);
 		{send, {PowerStrip_SerialId, Status, RequestSocket}} ->
 			spawn(?MODULE, send, [PowerStrip_SerialId, Status, RequestSocket]);
+		{ack, PowerStrip_SerialId} ->
+			ack_list ! {find_ack, PowerStrip_SerialId};
 		{'DOWN',_,process,{input,_},_} ->
 			register(input, spawn(?MODULE, input ,[])),
 			monitor(process, input);
@@ -113,27 +134,35 @@ send(PowerStrip_SerialId, Status, RequestSocket) ->
 					SocketId = [integer_to_list(N) || {N} <- sql_builder:get_socketId(PowerStrip_Id)],
 					Sql = sql_builder:new_status(SocketId, string:tokens(Status, ";")),
 					odbc_unit ! {insert, Sql},
-					case gen_tcp:send(RequestSocket, "switchRequestTrue\n") of
+					ack_list ! {ack_request, {PowerStrip_SerialId, self()}},
+					receive 
 						ok ->
-							io:fwrite("Switch Request ok ack sent\n");
-						{error, _} ->
-							io:fwrite("Switch Request ok ack not sent\n")
+							ack_sucess(RequestSocket)
+					after 
+						10000 ->
+							ack_failed(RequestSocket)
 					end;
 				{error, _} ->
 					io:fwrite("Could not send to: "++PowerStrip_SerialId++"\n"),
-					case gen_tcp:send(RequestSocket, "switchRequestFailed\n") of
-						ok ->
-							io:fwrite("Switch Request fail ack sent\n");
-						{error, _} ->
-							io:fwrite("Switch Request fail ack not sent\n")
-					end
+					ack_failed(RequestSocket)
 			end;
 		{not_found} ->  
 			io:fwrite("Socket not found \n"),
-			case gen_tcp:send(RequestSocket, "switchRequestFailed\n") of
-				ok ->
-					io:fwrite("Switch Request fail ack sent\n");
-				_Else ->
-					io:fwrite("Switch Request fail ack not sent\n")
-			end
+			ack_failed(RequestSocket)
+	end.
+	
+ack_sucess(RequestSocket) ->
+	case gen_tcp:send(RequestSocket, "switchRequestTrue\n") of
+		ok ->
+			io:fwrite("Switch Request ok ack sent\n");
+		{error, _} ->
+			io:fwrite("Switch Request ok ack not sent\n")
+	end.
+	
+ack_failed(RequestSocket) ->
+	case gen_tcp:send(RequestSocket, "switchRequestFailed\n") of
+		ok ->
+			io:fwrite("Switch Request fail ack sent\n");
+		{error, _} ->
+			io:fwrite("Switch Request fail ack not sent\n")
 	end.
