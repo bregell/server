@@ -91,9 +91,10 @@ send(PowerStrip_SerialId, Status) ->
 			io:fwrite("Found\n"),
 			case gen_tcp:send(Socket, PowerStrip_SerialId++":"++Status) of
 				ok ->
-					spawn(odbc_unit, input, [sql_builder:new_status(PowerStrip_SerialId, string:tokens(Status, ";"))]),
-					io:fwrite("Sent: "),
-					io:fwrite(PowerStrip_SerialId++":"++Status);
+					PowerStrip_Id = integer_to_list(sql_builder:get_powerStripId(PowerStrip_SerialId)),
+					SocketId = [integer_to_list(N) || {N} <- sql_builder:get_socketId(PowerStrip_Id)],
+					Sql = sql_builder:new_status(SocketId, string:tokens(Status, ";")),
+					odbc_unit ! {insert, Sql};
 				{error, _} ->
 					io:fwrite("Could not send to: "++PowerStrip_SerialId++"\n")
 			end;
@@ -108,21 +109,22 @@ send(PowerStrip_SerialId, Status, RequestSocket) ->
 			io:fwrite("Found\n"),
 			case gen_tcp:send(Socket, PowerStrip_SerialId++":"++Status) of
 				ok ->
-					spawn(odbc_unit, input, [sql_builder:new_status(PowerStrip_SerialId, string:tokens(Status, ";"))]),
-					io:fwrite("Sent: "),
-					io:fwrite(PowerStrip_SerialId++":"++Status),
+					PowerStrip_Id = integer_to_list(sql_builder:get_powerStripId(PowerStrip_SerialId)),
+					SocketId = [integer_to_list(N) || {N} <- sql_builder:get_socketId(PowerStrip_Id)],
+					Sql = sql_builder:new_status(SocketId, string:tokens(Status, ";")),
+					odbc_unit ! {insert, Sql},
 					case gen_tcp:send(RequestSocket, "switchRequestTrue\n") of
 						ok ->
 							io:fwrite("Switch Request ok ack sent\n");
-						_Else ->
+						{error, _} ->
 							io:fwrite("Switch Request ok ack not sent\n")
 					end;
 				{error, _} ->
 					io:fwrite("Could not send to: "++PowerStrip_SerialId++"\n"),
 					case gen_tcp:send(RequestSocket, "switchRequestFailed\n") of
-							ok ->
+						ok ->
 							io:fwrite("Switch Request fail ack sent\n");
-						_Else ->
+						{error, _} ->
 							io:fwrite("Switch Request fail ack not sent\n")
 					end
 			end;

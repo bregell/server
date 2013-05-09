@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/0,start/1,start/2,start/3,worker/3,send/4,receiver/2]).
+-export([start/0,start/1,start/2,start/3,worker/3,send/4,receiver/2,test/2]).
 
 
 
@@ -20,9 +20,19 @@
 %% @end
 %% @spec (Input) -> any()
 %% Input = string()
+test(Total,Current) ->
+	case Current of
+		Total ->
+			start("bregell.mine.nu", 39500, "SN-TEST"++integer_to_list(Current));
+		_Else ->
+			spawn(?MODULE, start, ["bregell.mine.nu", 39500, "SN-TEST"++integer_to_list(Current)]),
+			timer:sleep(timer:seconds(1)),
+			test(Total, Current+1)
+	end.
+	
 start() ->
-	spawn(test_client, start, ["bregell.mine.nu", 39500, "SN-ANDRO1"]),
-	spawn(test_client, start, ["bregell.mine.nu", 39500, "SN-ANDRO2"]).
+	spawn(?MODULE, start, ["bregell.mine.nu", 39500, "SN-ANDRO1"]),
+	spawn(?MODULE, start, ["bregell.mine.nu", 39500, "SN-ANDRO2"]).
 	
 start(PowerStrip_Id) ->
 	start(localhost, 39500, PowerStrip_Id).

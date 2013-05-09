@@ -17,7 +17,7 @@
 %% ====================================================================
 
 start() ->
-	spawn(?MODULE, loop, [self()]),
+	spawn_link(?MODULE, loop, [self()]),
 	worker().
 
 %% @todo Implement connection with database and command builder
@@ -38,15 +38,15 @@ worker() ->
 				end
 			end,
 			case sql_builder:get_timers() of 
-				{ok, [{selected,_,Timer_Rows}]} ->
+				{selected,_, Timer_Rows} ->
 					ok;
-				{ok, [{error,_}]}->
+				{error,_}->
 					Timer_Rows = []
 			end,
 			case sql_builder:get_repeaters() of			
-				{ok, [{selected,_,Repeater_Rows}]} ->
+				{selected,_,Repeater_Rows} ->
 					ok;
-				{ok, [{error,_}]}->
+				{error,_}->
 					Repeater_Rows = []
 			end,
 			Rows = lists:append(Timer_Rows, Repeater_Rows),

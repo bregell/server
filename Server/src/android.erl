@@ -4,9 +4,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([decode/2, query/1]).
-
-
+-export([decode/2]).
 
 %% ====================================================================
 %% Internal functions
@@ -14,9 +12,7 @@
 decode([Package], Socket) ->
 	io:fwrite("Package data: "++Package),
 	Strip = fun(Str) -> string:sub_string(Str, 2, string:len(Str)-2) end,
-	Input = Strip(Package),
-	io:fwrite("Input data: "++Input++"\n"),
-	List = [{A,B} || [A,B] <- [string:tokens(A, ":") || A <- string:tokens(Input, ",")]],
+	List = [{A,B} || [A,B] <- [string:tokens(A, ":") || A <- string:tokens(Strip(Package), ",")]],
 	case List of
 		[{"username",UserName},{"request",Request}|Data] ->
 			case Request of 
@@ -151,9 +147,9 @@ getPowerStrips(UserName, ApiKey, Socket) ->
 				select array_to_json(array_agg(row_to_json(d))) as powerstrips
 				from
 				(
-					select k.id, \"serialId\" as serialid
+					select k.id, \"serialId\" as serialid, k.name 
 					from (
-						SELECT id, \"serialId\", user_id FROM \"powerStrip_powerstrip\"
+						SELECT id, \"serialId\", user_id, name FROM \"powerStrip_powerstrip\"
 					) as k
 					inner join auth_user 
 					on user_id = auth_user.id
@@ -278,10 +274,10 @@ setName(SocketId, ApiKey, Socket, NewName) ->
 	",
 	{SocketId_Integer,_} = string:to_integer(SocketId),
 	case query(Sql_getUser) of
-		[{SocketId}] ->
+		[{SocketId_Integer}] ->
 			case query(Sql_setName) of
 				1 ->
-					send(Socket, "{\"socketid\":"++SocketId++",\"result\":true}");
+					send(Socket, "{\"socketid\":"++SocketId++",\"result\":true,\"newname\":"++NewName++"}");
 				_Else ->
 					io:fwrite("Error when trying to rename Socket\n"),
 					send(Socket, "{\"socketid\":"++SocketId++",\"result\":false}")
@@ -315,7 +311,7 @@ setPsName(PowerStripId, ApiKey, Socket, NewName) ->
 		[{PowerStripId_Integer}] ->
 			case query(Sql_setName) of
 				1 ->
-					send(Socket, "{\"powerstripid\":"++PowerStripId++",\"result\":true}");
+					send(Socket, "{\"powerstripid\":"++PowerStripId++",\"result\":true,\"newname\":"++NewName++"}");
 				_Else ->
 					io:fwrite("Error when trying to rename PowerStrip\n"),
 					send(Socket, "{\"powerstripid\":"++PowerStripId++",\"result\":false}")
