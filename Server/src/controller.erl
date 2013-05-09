@@ -91,7 +91,7 @@ send(PowerStrip_SerialId, Status) ->
 			io:fwrite("Found\n"),
 			case gen_tcp:send(Socket, PowerStrip_SerialId++":"++Status) of
 				ok ->
-					spawn(odbc_unit, input, [sql_builder:new_status(PowerStrip_SerialId, string:tokens(Status, ";"))]),
+					odbc_unit ! {input, sql_builder:new_status(PowerStrip_SerialId, string:tokens(Status, ";"))},
 					io:fwrite("Sent: "),
 					io:fwrite(PowerStrip_SerialId++":"++Status);
 				{error, _} ->
