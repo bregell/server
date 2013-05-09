@@ -79,9 +79,10 @@ receiver(Socket) ->
 				["Android"|Data] ->
 					spawn(android, decode, [Data, Socket]);
 				["PowerStrip"|Data] ->
+					io:frite(Data),
 					spawn(powerstrip, decode, [Data, Socket]);
 				_Else ->		
-					Output = string:tokens(Package, ":"),
+					Output = string:tokens(string:sub_string(Package, 1, string:len(Package)-1), ":"),
 					case Output of
 						[PowerStrip_SerialId,Power,Status,Date,Time] ->
 							controller ! {new,{PowerStrip_SerialId,Socket}},
@@ -89,9 +90,10 @@ receiver(Socket) ->
 							Status_list = string:tokens(Status, ";"),
 							Date_list = string:tokens(Date, ";"),
 							Time_list = string:tokens(Time, ";"),
-							spawn(sql_builder,insert_from_powerstrip,[PowerStrip_SerialId,Power_list,Status_list,Date_list,Time_list]),							
-							analyzer ! {read, PowerStrip_SerialId};
+							spawn(sql_builder,insert_from_powerstrip,[PowerStrip_SerialId,Power_list,Status_list,Date_list,Time_list]);							
+							%%analyzer ! {read, PowerStrip_SerialId};
 						[PowerStrip_SerialId, Status] ->
+							io:fwrite(Package),
 							controller ! {send,{PowerStrip_SerialId, Status, Socket}};
 						_Else ->
 							io:fwrite("Error no matching case, tcp packet thrown away.\n"),

@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([insert_from_powerstrip/5,get_history/2,get_powerStripId/1,get_socketId/1,get_status/1,get_timers/0,get_repeaters/0]).
+-export([insert_from_powerstrip/5,new_status/2,get_history/2,get_powerStripId/1,get_socketId/1,get_status/1,get_timers/0,get_repeaters/0]).
 
 
 
@@ -93,7 +93,7 @@ new_data(PowerStrip_Id, SocketId, Power, Date, Time) ->
 new_status(SocketId, Status) ->
 	%% Makes a list of UPDATE statements for the given SID
     %% UPDATE "powerStrip_socket" SET id=?, socket=?, "powerStrip_id"=?, status=?, name=? WHERE <condition>;
-	["UPDATE \"powerStrip_socket\" SET status="++S++" WHERE id = '"++SL++"'" || {S,SL} <- lists:zip(Status, SocketId)].
+	["UPDATE \"powerStrip_socket\" SET status="++S++" WHERE id = '"++SL++"'" || {S,SL} <- lists:zip(Status, SocketId), S /= "D"].
 
 
 %% @doc
