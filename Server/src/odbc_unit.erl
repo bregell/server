@@ -39,7 +39,9 @@ query(Sql, Conn) ->
 %% Sql = [string()]
 input(Sql) ->
 	{ok, Conn} = odbc:connect("DSN=PostgreSQL30", []),
-	input(Sql, Conn).
+	Result = input(Sql, Conn),
+	odbc:disconnect(Conn),
+	Result.
 	
 input(Sql, Conn) ->
 	odbc:sql_query(Conn, Sql).
@@ -52,7 +54,9 @@ input(Sql, Conn) ->
 %% Sql = [string()]
 bulk_input(Sql) ->
 	{ok, Conn} = odbc:connect("DSN=PostgreSQL30", []),
-	input(Sql, Conn).
+	Result = input(Sql, Conn),
+	odbc:disconnect(Conn),
+	Result.
 	
 bulk_input(Sql, Conn) ->
 	Bulk = string:join(Sql, ";"),

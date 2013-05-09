@@ -17,7 +17,7 @@
 %% ====================================================================
 
 start() ->
-	spawn(?MODULE, loop, [self()]),
+	spawn_link(?MODULE, loop, [self()]),
 	worker().
 
 %% @todo Implement connection with database and command builder
