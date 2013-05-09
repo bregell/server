@@ -89,7 +89,7 @@ receiver(Socket) ->
 							Status_list = string:tokens(Status, ";"),
 							Date_list = string:tokens(Date, ";"),
 							Time_list = string:tokens(Time, ";"),
-							spawn(sql_builder, insert_from_powerstrip, [PowerStrip_SerialId,Power_list,Status_list,Date_list,Time_list]),							
+							spawn(sql_builder,insert_from_powerstrip,[PowerStrip_SerialId,Power_list,Status_list,Date_list,Time_list]),							
 							analyzer ! {read, PowerStrip_SerialId};
 						[PowerStrip_SerialId, Status] ->
 							controller ! {send,{PowerStrip_SerialId, Status, Socket}};
