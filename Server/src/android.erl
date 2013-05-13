@@ -43,10 +43,10 @@ decode([Package], Socket) ->
 							StartTimestamp = SDate++" "++string:join(string:tokens(STime, "-"), ":"),
 							[EDate,ETime] = string:tokens(EndDate, " "),
 							EndTimestamp = EDate++" "++string:join(string:tokens(ETime, "-"), ":"),
-							getConsumptionUser(SocketId, ApiKey, Socket, StartTimestamp, EndTimestamp);
+							getConsumptionUser(UserName, ApiKey, Socket, StartTimestamp, EndTimestamp);
 						_Else -> 
 							io:fwrite("Bad data for getConsumptionSocket request\n"),
-							send(Socket, "{\"socketid\":"++SocketId++",\"result\":false}")
+							send(Socket, "{\"socketid\":"++UserName++",\"result\":false}")
 					end
 			end;	
 		[{"powerstripid",PowerStripId},{"request",Request}|Data] ->
