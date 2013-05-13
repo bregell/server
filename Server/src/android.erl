@@ -31,6 +31,22 @@ decode([Package], Socket) ->
 						_Else ->
 							io:fwrite("Bad data for getPowerStrips request\n"),
 							send(Socket, "{\"username\":\""++UserName++"\",\"result\":false}")
+					end;
+				"consumption" ->
+					case Data of
+						[
+							{"apikey", ApiKey},
+							{"startdate",StartDate},
+							{"enddate",EndDate}
+						] ->
+							[SDate,STime] = string:tokens(StartDate, " "),
+							StartTimestamp = SDate++" "++string:join(string:tokens(STime, "-"), ":"),
+							[EDate,ETime] = string:tokens(EndDate, " "),
+							EndTimestamp = EDate++" "++string:join(string:tokens(ETime, "-"), ":"),
+							getConsumptionUser(SocketId, ApiKey, Socket, StartTimestamp, EndTimestamp);
+						_Else -> 
+							io:fwrite("Bad data for getConsumptionSocket request\n"),
+							send(Socket, "{\"socketid\":"++SocketId++",\"result\":false}")
 					end
 			end;	
 		[{"powerstripid",PowerStripId},{"request",Request}|Data] ->
@@ -50,6 +66,7 @@ decode([Package], Socket) ->
 							{"startdate", StartDate},
 							{"enddate", EndDate}
 						] ->
+							%%{powerstripid:5,request:consumption,apikey:apikey1011,startdate:3913-06-09 00-00-00.000+0100,enddate:3913-06-10 00-00-00.000+0100}
 							%%powerstripid:12,request:consumption,apikey:1a2b3c4d5e6f7g,startdate:2010-01-01 00-00-00.000+0000,enddate:2014-01-01 00-00-00.000+0000
 							[SDate,STime] = string:tokens(StartDate, " "),
 							StartTimestamp = SDate++" "++string:join(string:tokens(STime, "-"), ":"),
@@ -81,7 +98,11 @@ decode([Package], Socket) ->
 							{"startdate",StartDate},
 							{"enddate",EndDate}
 						] ->
-							getConsumptionSocket(SocketId, ApiKey, Socket, StartDate, EndDate);
+							[SDate,STime] = string:tokens(StartDate, " "),
+							StartTimestamp = SDate++" "++string:join(string:tokens(STime, "-"), ":"),
+							[EDate,ETime] = string:tokens(EndDate, " "),
+							EndTimestamp = EDate++" "++string:join(string:tokens(ETime, "-"), ":"),
+							getConsumptionSocket(SocketId, ApiKey, Socket, StartTimestamp, EndTimestamp);
 						_Else -> 
 							io:fwrite("Bad data for getConsumptionSocket request\n"),
 							send(Socket, "{\"socketid\":"++SocketId++",\"result\":false}")
@@ -189,6 +210,40 @@ getSockets(PowerStripId, ApiKey, Socket) ->
 		) as d
 	",
 	queryAndSend(Sql, Socket).
+
+getConsumptionUser(UserName, ApiKey, Socket, StartDate, EndDate) ->
+	Sql = 
+	"
+		select row_to_json(t)
+		from
+		(
+			select sum(\"activePower\") as activepower, \"timeStamp\" as timestamp
+			from \"powerStrip_consumption\" as psc
+			inner join \"powerStrip_powerstrip\" as psp
+			on psc.\"powerStrip_id\" = psp.id
+			where psc.\"powerStrip_id\" IN (
+				select k.id
+				from (
+					SELECT id, \"serialId\", user_id, name FROM \"powerStrip_powerstrip\"
+				) as k
+				inner join auth_user 
+				on user_id = auth_user.id
+				where username = '"++UserName++"'
+				and apikey = '"++ApiKey++"'
+			)
+			and \"timeStamp\" BETWEEN '"++StartDate++"' AND '"++EndDate++"'
+			group by \"timeStamp\", \"user_id\"
+		) as t	
+	",
+	Result = query(Sql),
+	case Result of
+		[] ->
+			send(Socket, "{\"username\":"++UserName++", \"result\":false}");
+		_Else ->
+			Data = [ A || {A} <- Result],
+			Array = string:join(Data, ","),
+			send(Socket, "{\"username\":"++UserName++", \"data\":["++Array++"]}")
+	end.
 	
 getConsumptionPowerStrip(PowerStripId, ApiKey, Socket, StartDate, EndDate) ->
 	Sql = 
@@ -216,7 +271,7 @@ getConsumptionPowerStrip(PowerStripId, ApiKey, Socket, StartDate, EndDate) ->
 	Result = query(Sql),
 	case Result of
 		[] ->
-			send(Socket, "{\"powerstripid\":"++PowerStripId++", \"result\":false}");
+			send(Socket, "{\"powerstripid\":"++PowerStripId++", \"result\":nodata}");
 		_Else ->
 			Data = [ A || {A} <- Result],
 			Array = string:join(Data, ","),
@@ -246,9 +301,14 @@ getConsumptionSocket(SocketId, ApiKey, Socket, StartDate, EndDate) ->
 		) as t
 	",
 	Result = query(Sql),
-	Data = [ A || {A} <- Result],
-	Message = "{socketid:"++SocketId++", data:"++Data++"}",
-	send(Socket, Message).
+	case Result of
+		[] ->
+			send(Socket, "{\"socketid\":"++SocketId++", \"result\":nodata}");
+		_Else ->
+			Data = [ A || {A} <- Result],
+			Array = string:join(Data, ","),
+			send(Socket, "{\"socketid\":"++SocketId++", \"data\":["++Array++"]}")
+	end.
 	
 setName(SocketId, ApiKey, Socket, NewName) ->
 	Sql_getUser = 
