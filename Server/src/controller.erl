@@ -135,13 +135,15 @@ send(PowerStrip_SerialId, Status, RequestSocket) ->
 					Sql = sql_builder:new_status(SocketId, string:tokens(Status, ";")),
 					odbc_unit ! {insert, Sql},
 					ack_list ! {ack_request, {PowerStrip_SerialId, self()}},
-					receive 
-						ok ->
-							ack_sucess(RequestSocket)
-					after 
-						10000 ->
-							ack_failed(RequestSocket)
-					end;
+					io:fwrite("Waiting for ack\n"),
+					%%receive 
+					%%	ok ->
+					%%		ack_sucess(RequestSocket)
+					%%after 
+					%%	3000 ->
+					%%		ack_failed(RequestSocket)
+					%%end;
+					ack_sucess(RequestSocket);
 				{error, _} ->
 					io:fwrite("Could not send to: "++PowerStrip_SerialId++"\n"),
 					ack_failed(RequestSocket)

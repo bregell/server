@@ -24,7 +24,7 @@ start() ->
 worker() ->
 	receive
 		start ->
-			io:fwrite("Started Scheduling worker\n"),
+			%io:fwrite("Started Scheduling worker\n"),
 			Send = fun(PowerStrip_SerialId, Socket, Status) -> 
 				case Socket of
 					1 ->
@@ -54,7 +54,7 @@ worker() ->
 		_Else ->
 			io:fwrite("Bad message\n")
 	end,
-	io:fwrite("Schedule worker finished\n"),
+	%io:fwrite("Schedule worker finished\n"),
 	worker().
 
 loop(Pid) ->

@@ -57,9 +57,8 @@ listener(Msg, Listen) ->
 			io:fwrite("\n");
 		{error, Reason} ->
 			Msg ! new_listener,
-			io:fwrite("Could not accept "),
-			io:fwrite(Reason),
-			io:fwrite("\n")
+			[String,_] = Reason,
+			io:fwrite("Could not accept "++String++"\n")
 	end.
 
 %% @doc
@@ -81,10 +80,13 @@ receiver(Socket) ->
 				["PowerStrip"|Data] ->
 					io:frite(Data),
 					spawn(powerstrip, decode, [Data, Socket]);
-				_Else ->		
+				_Else ->
+					io:fwrite(Package),
 					Output = string:tokens(string:sub_string(Package, 1, string:len(Package)-1), ":"),
+					%%io:fwrite(Output++"\n"),
 					case Output of
 						[PowerStrip_SerialId,Power,Status,Date,Time] ->
+							%io:fwrite(Time ++"\n"),
 							controller ! {new,{PowerStrip_SerialId,Socket}},
 							Power_list = string:tokens(Power, ";"),
 							Status_list = string:tokens(Status, ";"),
@@ -92,10 +94,11 @@ receiver(Socket) ->
 							Time_list = string:tokens(Time, ";"),
 							spawn(sql_builder,insert_from_powerstrip,[PowerStrip_SerialId,Power_list,Status_list,Date_list,Time_list]);							
 							%%analyzer ! {read, PowerStrip_SerialId};
-						[PowerStrip_SerialId, "OK"] ->
+						[PowerStrip_SerialId, [79,75|_]] ->
+							io:fwrite("Ack recieved from power strip\n"),
 							controller ! {ack, PowerStrip_SerialId};
 						[PowerStrip_SerialId, Status] ->
-							io:fwrite(Package),
+							%%io:fwrite(Status++"\n"),
 							controller ! {send,{PowerStrip_SerialId, Status, Socket}};
 						_Else ->
 							io:fwrite("Error no matching case, tcp packet thrown away.\n"),
