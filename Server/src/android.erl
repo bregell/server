@@ -32,6 +32,14 @@ decode([Package], Socket) ->
 							io:fwrite("Bad data for getPowerStrips request\n"),
 							send(Socket, "{\"username\":\""++UserName++"\",\"result\":false}")
 					end;
+				"powerstripsandsockets" ->
+					case Data of 
+						[{"apikey",ApiKey}] ->
+							getPowerStripsAndSockets(UserName, ApiKey, Socket);
+						_Else ->
+							io:fwrite("Bad data for getPowerStripsAndSockets request\n"),
+							send(Socket, "{\"username\":\""++UserName++"\",\"result\":false}")
+					end;
 				"consumption" ->
 					case Data of
 						[
@@ -118,7 +126,7 @@ decode([Package], Socket) ->
 							io:fwrite("Bad data for setName request\n"),
 							send(Socket, "{\"socketid\":"++SocketId++",\"result\":false}")
 					end;
-				"ournon" ->
+				"turnon" ->
 					case Data of
 						[
 							{"apikey", ApiKey}
@@ -208,6 +216,40 @@ getSockets(PowerStripId, ApiKey, Socket) ->
 				) as a
 			) as sockets
 		) as d
+	",
+	queryAndSend(Sql, Socket).
+
+getPowerStripsAndSockets(UserName, ApiKey, Socket) ->
+	Sql =
+	"
+	select row_to_json(t)
+	from
+	(
+		select '"++UserName++"' as username,
+		(
+			select array_to_json(array_agg(row_to_json(b))) as powerstrips
+			from
+			(
+				select k.id, \"serialId\" as serialid, k.name, 
+					(
+						select array_to_json(array_agg(row_to_json(a))) as sockets
+						from
+						(
+							SELECT id as socketid, name 
+							FROM \"powerStrip_socket\" 
+							WHERE \"powerStrip_id\" = k.id
+						) as a
+					) 
+				from (
+					SELECT id, \"serialId\", user_id, name FROM \"powerStrip_powerstrip\"
+				) as k
+				inner join auth_user 
+				on user_id = auth_user.id
+				where username = '"++UserName++"'
+				and apikey = '"++ApiKey++"'
+			) as b
+		)
+	) as t
 	",
 	queryAndSend(Sql, Socket).
 
@@ -398,11 +440,11 @@ switch(SocketId, ApiKey, Socket, Switch) ->
 		where apikey = '"++ApiKey++"'
 	",
 	case query(Sql_serialId) of
-		[{SerialID, SocketId, SocketNumber}] ->
-			send(Socket, "{\"socketid\":"++SocketId++",\"result\":true}"),
-			controlSocket(SerialID, SocketNumber, Switch);
+		[{SerialId, SocketId, SocketNumber}] ->
+			controlSocket(SerialId, SocketNumber, Switch, Socket);
 		_Else ->
-			io:fwrite("Error when trying to find PowerStrip_serialID\n")
+			send(Socket, "{\"socketid\":"++SocketId++",\"result\":false}"),
+			io:fwrite("Error when trying to find PowerStrip_serialId\n")
 	end.
 	
 queryAndSend(Sql, Socket) ->
@@ -434,12 +476,12 @@ send(Socket, Message) ->
 				io:fwrite("Could not send Android#"++Message++"\n")
 	end.
 	
-controlSocket(SerialID, 1, Mode) ->
-	controller ! {send, {SerialID, Mode++";D;D;D"}};
-controlSocket(SerialID, 2, Mode) ->
-	controller ! {send, {SerialID, "D;"++Mode++";D;D"}};
-controlSocket(SerialID, 3, Mode) ->
-	controller ! {send, {SerialID, "D;D;"++Mode++";D"}};
-controlSocket(SerialID, 4, Mode) ->
-	controller ! {send, {SerialID, "D;D;D;"++Mode}}.
+controlSocket(SerialID, 1, Mode, Socket) ->
+	controller ! {send, {SerialID, Mode++";D;D;D", Socket}};
+controlSocket(SerialID, 2, Mode, Socket) ->
+	controller ! {send, {SerialID, "D;"++Mode++";D;D", Socket}};
+controlSocket(SerialID, 3, Mode, Socket) ->
+	controller ! {send, {SerialID, "D;D;"++Mode++";D", Socket}};
+controlSocket(SerialID, 4, Mode, Socket) ->
+	controller ! {send, {SerialID, "D;D;D;"++Mode, Socket}}.
 	

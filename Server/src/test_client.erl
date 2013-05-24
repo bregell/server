@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/0,start/1,start/2,start/3,worker/3,send/4,receiver/2,test/2]).
+-export([start/0,start/1,start/2,start/3,test/2, worker/3]).
 
 
 
@@ -57,8 +57,7 @@ start(Address, Port, PowerStrip_Id) ->
 	case gen_tcp:connect(Address, Port, [list, {active, false}, {packet, line}]) of
 		{ok, Socket} ->
 			Pid = spawn_link(?MODULE, worker, [Socket, PowerStrip_Id, ["1","1","1","1"]]),
-			Pid ! start,
-			receiver(Socket, Pid);
+			receiver(Socket, Pid, PowerStrip_Id);
 		{error, Reason} ->
 			io:fwrite("Error: "),
 			io:fwrite(Reason)
@@ -72,7 +71,7 @@ start(Address, Port, PowerStrip_Id) ->
 %% Socket = socket()
 %% Units = [UnitID] 
 %% UnitID = string()
-send(Msg, Socket, PowerStrip_Id, Status) ->
+send(Socket, PowerStrip_Id, Status) ->
 	%% Create random data
 	random:seed(now()),
 	Data = [if S=="1"-> N; true -> 0 end|| {N,S} <- lists:zip([100+random:uniform(50), 200+random:uniform(100), 300+random:uniform(150), 400+random:uniform(50)],Status)],
@@ -87,9 +86,7 @@ send(Msg, Socket, PowerStrip_Id, Status) ->
 	Packet = fun(A) -> A++":"++string:join(Convert(Data), ";")++":"++string:join(Status, ";")++":"++Date++":"++Time++"\n" end,
 	case gen_tcp:send(Socket, Packet(PowerStrip_Id)) of
 		ok ->
-			io:fwrite("Data sent:"++Packet(PowerStrip_Id)),
-			timer:sleep(timer:seconds(10)),
-			Msg ! start;
+			io:fwrite("Data sent:"++Packet(PowerStrip_Id));
 		{error, Reason} ->
 			io:fwrite("Error: "),
 			io:fwrite(Reason),
@@ -101,17 +98,24 @@ send(Msg, Socket, PowerStrip_Id, Status) ->
 %% @end
 %% @spec (Socket) -> string()
 %% Socket = socket()
-receiver(Socket, Pid) ->
+receiver(Socket, Pid, PowerStrip_Id) ->
 	case gen_tcp:recv(Socket, 0) of
 		{ok, Packet} ->
-			io:fwrite("Received: "),
-			io:fwrite(Packet),
-			[_,Status_list] = string:tokens(Packet, ":"),
-			Status = string:tokens(Status_list, ";"),
-			Pid ! {status, Status},
-			io:fwrite("\n"),
-			receiver(Socket, Pid);
+			case gen_tcp:send(Socket, PowerStrip_Id++":OK\n") of
+				ok ->
+					io:fwrite("Received: "),
+					io:fwrite(Packet),
+					[_,Status_list] = string:tokens(Packet, ":"),
+					Status = string:tokens(Status_list, ";"),
+					Pid ! {status, Status},
+					io:fwrite("\n"),
+					receiver(Socket, Pid, PowerStrip_Id);
+				{error, _} ->
+					Pid ! socket_closed,
+					io:fwrite("Could not receive\n")
+			end;
 		{error, _} ->
+			Pid ! socket_closed,
 			io:fwrite("Could not receive\n")
 	end.
 		
@@ -125,12 +129,15 @@ receiver(Socket, Pid) ->
 %% UnitID = string()
 worker(Socket, PowerStrip_Id, Current_Status) -> 
 	receive
-		start ->
-			%% @todo Add chech to see if Socket is closed and if it is reconnect.
-			spawn_link(?MODULE, send, [self(), Socket, PowerStrip_Id, Current_Status]);
 		{status, Status} ->
 			worker(Socket, PowerStrip_Id, [if N/="D" -> N; true -> O end || {N,O} <- lists:zip(Status, Current_Status)]);
+		socket_closed ->
+			io:fwrite("Conection lost");
 		_ ->
-			io:fwrite("Bad Msg \n")
-	end,
-	worker(Socket, PowerStrip_Id, Current_Status).
+			io:fwrite("Bad Msg \n"),
+			worker(Socket, PowerStrip_Id, Current_Status)
+	after
+		10000 ->
+			send(Socket, PowerStrip_Id, Current_Status),
+			worker(Socket, PowerStrip_Id, Current_Status)
+	end.

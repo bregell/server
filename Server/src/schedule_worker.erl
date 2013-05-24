@@ -26,6 +26,7 @@ worker() ->
 		start ->
 			%io:fwrite("Started Scheduling worker\n"),
 			Send = fun(PowerStrip_SerialId, Socket, Status) -> 
+				io:fwrite(Socket),
 				case Socket of
 					1 ->
 						controller ! {send, {PowerStrip_SerialId, Status++";D;D;D"}};

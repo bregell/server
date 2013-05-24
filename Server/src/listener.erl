@@ -108,8 +108,10 @@ receiver(Socket) ->
 			end,
 			receiver(Socket);
 		{error, closed} ->
+			controller ! {remove,{Socket}},
 			io:fwrite("Socket closed\n");
 		{error, _} ->
+			controller ! {remove,{Socket}},
 			io:fwrite("Could not recieve!\n")
 	end.
 	

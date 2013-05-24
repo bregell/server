@@ -50,6 +50,8 @@ input(Data) ->
 				false ->
 					input(lists:append(Data, [{PowerStrip_SerialId, Socket}]))
 			end;
+		{remove, {Socket}} ->
+			input(lists:keydelete(Socket, 2, Data));
 		{get_socket, {PowerStrip_SerialId, Pid}} ->
 			case lists:keyfind(PowerStrip_SerialId, 1, Data) of
 				{PowerStrip_SerialId, Socket} ->
@@ -68,7 +70,7 @@ ack_list(Data) ->
 	receive
 		{ack_request, {PowerStrip_SerialId, ReqestPid}} ->
 			ack_list(lists:append(Data, [{PowerStrip_SerialId, ReqestPid}]));
-		{find_ack, PowerStrip_SerialId} ->
+		{ack_checkout, PowerStrip_SerialId} ->
 			case lists:keyfind(PowerStrip_SerialId, 1, Data) of
 				{PowerStrip_SerialId, ReqestPid} ->
 					ReqestPid ! ok,
@@ -85,12 +87,14 @@ mailbox() ->
 	receive
 		{new, {PowerStrip_SerialId, Socket}} ->
 			input ! {new, {PowerStrip_SerialId, Socket}};
+		{remove, {Socket}} ->
+			input ! {remove, {Socket}};
 		{send, {PowerStrip_SerialId, Status}} ->
 			spawn(?MODULE, send, [PowerStrip_SerialId, Status]);
 		{send, {PowerStrip_SerialId, Status, RequestSocket}} ->
 			spawn(?MODULE, send, [PowerStrip_SerialId, Status, RequestSocket]);
 		{ack, PowerStrip_SerialId} ->
-			ack_list ! {find_ack, PowerStrip_SerialId};
+			ack_list ! {ack_checkout, PowerStrip_SerialId};
 		{'DOWN',_,process,{input,_},_} ->
 			register(input, spawn(?MODULE, input ,[])),
 			monitor(process, input);
@@ -128,7 +132,7 @@ send(PowerStrip_SerialId, Status, RequestSocket) ->
 	receive 
 		{found, Socket} ->
 			io:fwrite("Found\n"),
-			case gen_tcp:send(Socket, PowerStrip_SerialId++":"++Status) of
+			case gen_tcp:send(Socket, PowerStrip_SerialId++":"++Status++"\n") of
 				ok ->
 					PowerStrip_Id = integer_to_list(sql_builder:get_powerStripId(PowerStrip_SerialId)),
 					SocketId = [integer_to_list(N) || {N} <- sql_builder:get_socketId(PowerStrip_Id)],
@@ -136,14 +140,14 @@ send(PowerStrip_SerialId, Status, RequestSocket) ->
 					odbc_unit ! {insert, Sql},
 					ack_list ! {ack_request, {PowerStrip_SerialId, self()}},
 					io:fwrite("Waiting for ack\n"),
-					%%receive 
-					%%	ok ->
-					%%		ack_sucess(RequestSocket)
-					%%after 
-					%%	3000 ->
-					%%		ack_failed(RequestSocket)
-					%%end;
-					ack_sucess(RequestSocket);
+					receive 
+						ok ->
+							ack_sucess(RequestSocket)
+					after 
+						3000 ->
+							ack_failed(RequestSocket)
+					end;
+					%%ack_sucess(RequestSocket);
 				{error, _} ->
 					io:fwrite("Could not send to: "++PowerStrip_SerialId++"\n"),
 					ack_failed(RequestSocket)
