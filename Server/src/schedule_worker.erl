@@ -39,18 +39,20 @@ worker() ->
 			end,
 			case sql_builder:get_timers() of 
 				{selected,_, Timer_Rows} ->
-					ok;
+					Timer_Rows;
 				{error,_}->
 					Timer_Rows = []
 			end,
-			case sql_builder:get_repeaters() of			
-				{selected,_,Repeater_Rows} ->
-					ok;
-				{error,_}->
-					Repeater_Rows = []
-			end,
-			Rows = lists:append(Timer_Rows, Repeater_Rows),
-			[Send(PowerStrip_SerialId, Socket, integer_to_list(Status)) || {PowerStrip_SerialId, Socket, Status}  <- Rows];
+			%%case sql_builder:get_repeaters() of			
+			%%	{selected,_,Repeater_Rows} ->
+			%%		ok;
+			%%	{error,_}->
+			%%		Repeater_Rows = []
+			%%end,
+			%% serialID;socket,socket_id,mode
+			%% "SN-0000003";1;9;1
+			Rows = lists:append(Timer_Rows, []),
+			[Send(PowerStrip_SerialId, Socket, integer_to_list(Mode)) || {PowerStrip_SerialId, Socket, Mode}  <- Rows];
 		_Else ->
 			io:fwrite("Bad message\n")
 	end,

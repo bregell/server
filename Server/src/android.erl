@@ -118,7 +118,7 @@ decode([Package], Socket) ->
 							io:fwrite("Bad data for setName request\n"),
 							send(Socket, "{\"socketid\":"++SocketId++",\"result\":false}")
 					end;
-				"ournon" ->
+				"turnon" ->
 					case Data of
 						[
 							{"apikey", ApiKey}
@@ -397,10 +397,12 @@ switch(SocketId, ApiKey, Socket, Switch) ->
 		on id = user_id
 		where apikey = '"++ApiKey++"'
 	",
-	case query(Sql_serialId) of
-		[{SerialID, SocketId, SocketNumber}] ->
-			send(Socket, "{\"socketid\":"++SocketId++",\"result\":true}"),
-			controlSocket(SerialID, SocketNumber, Switch);
+	Result = query(Sql_serialId),
+	%%io:fwrite(Result),
+	case Result of
+		[{SerialID, _SocketId, SocketNumber}] ->
+			controlSocket(SerialID, SocketNumber, Switch),
+			send(Socket, "{\"socketid\":"++SocketId++",\"result\":true}");
 		_Else ->
 			io:fwrite("Error when trying to find PowerStrip_serialID\n")
 	end.

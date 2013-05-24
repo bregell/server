@@ -110,7 +110,7 @@ send(PowerStrip_SerialId, Status) ->
 	receive 
 		{found, Socket} ->
 			io:fwrite("Found\n"),
-			case gen_tcp:send(Socket, PowerStrip_SerialId++":"++Status) of
+			case gen_tcp:send(Socket, PowerStrip_SerialId++":"++Status++"\n") of
 				ok ->
 					PowerStrip_Id = integer_to_list(sql_builder:get_powerStripId(PowerStrip_SerialId)),
 					SocketId = [integer_to_list(N) || {N} <- sql_builder:get_socketId(PowerStrip_Id)],
@@ -128,7 +128,7 @@ send(PowerStrip_SerialId, Status, RequestSocket) ->
 	receive 
 		{found, Socket} ->
 			io:fwrite("Found\n"),
-			case gen_tcp:send(Socket, PowerStrip_SerialId++":"++Status) of
+			case gen_tcp:send(Socket, PowerStrip_SerialId++":"++Status++"\n") of
 				ok ->
 					PowerStrip_Id = integer_to_list(sql_builder:get_powerStripId(PowerStrip_SerialId)),
 					SocketId = [integer_to_list(N) || {N} <- sql_builder:get_socketId(PowerStrip_Id)],
