@@ -113,26 +113,8 @@ get_status(PowerStrip_SerialId) ->
 
 get_timers() ->
 	Sql = [
-<<<<<<< HEAD
-		"	SELECT powerstrip_id, socket, mode 
-			FROM
-			(
-				SELECT powerstrip_id, mode 
-				FROM 	\"powerStrip_schedule_timer\" as pst, 
-					\"powerStrip_powerstrip_schedule_timer\" as ppst 
-				WHERE ppst.schedule_timer_id = pst.id	
-				AND time BETWEEN (NOW() - INTERVAL '5' MINUTE) AND NOW()
-			) as ppp
-			INNER JOIN \"powerStrip_socket\" as ps
-			ON ps.\"powerStrip_id\" = ppp.powerstrip_id
-			UNION ALL
-			SELECT \"powerStrip_id\" as powerstrip_id, socket, mode 
-			FROM
-			(
-=======
 		"SELECT \"serialId\", socket, mode FROM(
 			SELECT socket, socket_id, mode, \"powerStrip_id\", status FROM(
->>>>>>> d935f9a60bb84f8fd9b4b9ba84ba5b88d6c0abae
 				SELECT socket_id, mode 
 				FROM 	\"powerStrip_schedule_timer\" as pst, 
 					\"powerStrip_socket_schedule_timer\" as psst
@@ -140,8 +122,7 @@ get_timers() ->
 				AND time BETWEEN (NOW() - INTERVAL '5' MINUTE) AND NOW()
 			) AS pss
 			INNER JOIN \"powerStrip_socket\" as ps
-			ON pss.socket_id = ps.id
-		"
+			ON pss.socket_id = ps.id"
 	],
 	odbc_unit:input(Sql).
 	
