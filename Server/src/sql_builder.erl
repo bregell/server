@@ -113,6 +113,7 @@ get_status(PowerStrip_SerialId) ->
 
 get_timers() ->
 	Sql = [
+<<<<<<< HEAD
 		"	SELECT powerstrip_id, socket, mode 
 			FROM
 			(
@@ -128,6 +129,10 @@ get_timers() ->
 			SELECT \"powerStrip_id\" as powerstrip_id, socket, mode 
 			FROM
 			(
+=======
+		"SELECT \"serialId\", socket, mode FROM(
+			SELECT socket, socket_id, mode, \"powerStrip_id\", status FROM(
+>>>>>>> d935f9a60bb84f8fd9b4b9ba84ba5b88d6c0abae
 				SELECT socket_id, mode 
 				FROM 	\"powerStrip_schedule_timer\" as pst, 
 					\"powerStrip_socket_schedule_timer\" as psst

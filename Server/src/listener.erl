@@ -81,7 +81,7 @@ receiver(Socket) ->
 					io:frite(Data),
 					spawn(powerstrip, decode, [Data, Socket]);
 				_Else ->
-					io:fwrite(Package),
+					%%io:fwrite(Package),
 					Output = string:tokens(string:sub_string(Package, 1, string:len(Package)-1), ":"),
 					%%io:fwrite(Output++"\n"),
 					case Output of
