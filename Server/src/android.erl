@@ -307,7 +307,7 @@ getConsumptionPowerStrip(PowerStripId, ApiKey, Socket, StartDate, EndDate) ->
 			) as atu
 			on atu.user_id = au.id
 			where au.apikey = '"++ApiKey++"'
-			order by timestamp desc
+			order by timestamp asc
 		) as t
 	",
 	Result = query(Sql),
@@ -440,7 +440,7 @@ switch(SocketId, ApiKey, Socket, Switch) ->
 		where apikey = '"++ApiKey++"'
 	",
 	case query(Sql_serialId) of
-		[{SerialId, SocketId, SocketNumber}] ->
+		[{SerialId, _SocketId, SocketNumber}] ->
 			controlSocket(SerialId, SocketNumber, Switch, Socket);
 		_Else ->
 			send(Socket, "{\"socketid\":"++SocketId++",\"result\":false}"),
@@ -471,7 +471,8 @@ query(Sql) ->
 send(Socket, Message) ->
 	case gen_tcp:send(Socket, "Android#"++Message++"\n") of
 			ok ->
-				io:fwrite("Sent: Android#"++Message++"\n");
+				%%io:fwrite("Sent: Android#"++Message++"\n");
+				io:fwrite("OK\n");
 			{error, _} ->
 				io:fwrite("Could not send Android#"++Message++"\n")
 	end.
