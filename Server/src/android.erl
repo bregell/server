@@ -447,7 +447,7 @@ setPsName(PowerStripId, ApiKey, Socket, NewName) ->
 		[{PowerStripId_Integer}] ->
 			case query(Sql_setName) of
 				1 ->
-					send(Socket, "{\"powerstripid\":"++PowerStripId++",\"result\":true,\"newname\":"++NewName++"}");
+					send(Socket, "{\"powerstripid\":"++PowerStripId++",\"result\":true,\"newname\":\""++NewName++"\"}");
 				_Else ->
 					io:fwrite("Error when trying to rename PowerStrip\n"),
 					send(Socket, "{\"powerstripid\":"++PowerStripId++",\"result\":false}")
