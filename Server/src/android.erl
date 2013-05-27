@@ -95,6 +95,14 @@ decode([Package], Socket) ->
 						_Else -> 
 							io:fwrite("Bad data for setName request\n"),
 							send(Socket, "{\"powerstripid\":"++PowerStripId++",\"result\":false}")
+					end;
+				"status" ->
+					case Data of 
+						[{"apikey",ApiKey}] ->
+							getPowerStripStatus(PowerStripId, ApiKey, Socket);
+						_Else ->
+							io:fwrite("Bad data for getPowerStripStatus request\n"),
+							send(Socket, "{\"username\":\""++PowerStripId++"\",\"result\":false}")
 					end
 			end;	
 		[{"socketid",SocketId},{"request",Request}|Data] ->
@@ -144,6 +152,16 @@ decode([Package], Socket) ->
 							switch(SocketId, ApiKey, Socket, "0");
 						_Else -> 
 							io:fwrite("Bad data for turnOff request\n"),
+							send(Socket, "{\"socketid\":"++SocketId++",\"result\":false}")
+					end;
+				"status" ->
+					case Data of
+						[
+							{"apikey", ApiKey}
+						] ->
+							getSocketStatus(SocketId, ApiKey, Socket);
+						_Else -> 
+							io:fwrite("Bad data for getSocketStatus request\n"),
 							send(Socket, "{\"socketid\":"++SocketId++",\"result\":false}")
 					end
 			end;
@@ -446,6 +464,56 @@ switch(SocketId, ApiKey, Socket, Switch) ->
 			send(Socket, "{\"socketid\":"++SocketId++",\"result\":false}"),
 			io:fwrite("Error when trying to find PowerStrip_serialId\n")
 	end.
+	
+getSocketStatus(SocketId, ApiKey, Socket) ->
+	Sql = 
+	"
+	select row_to_json(answer) 
+	from(
+		select '"++SocketId++"' as socketid, status
+		from (
+			select status, user_id
+			from (
+				select status, \"powerStrip_id\" as id
+				from \"powerStrip_socket\" 
+				where id = '"++SocketId++"'
+			) as ps
+			inner join \"powerStrip_powerstrip\" as pp
+			on ps.id = pp.id
+		) as status
+		inner join auth_user as au
+		on au.id = status.user_id
+		where apikey = '"++ApiKey++"'
+	) as answer
+	";
+	queryAndSend(Sql, Socket).
+	
+getPowerStripStatus(PowerStripId, ApiKey, Socket) ->
+	Sql = 
+	"
+	select row_to_json(answer) 
+	from(
+		select distinct '"++PowerStripId++"' as powerstripid, '1' as status
+		from (
+			select distinct user_id as ui, pc.socket_id as sid, pc.\"powerStrip_id\" as pid
+			from \"powerStrip_consumption\" as pc, \"powerStrip_powerstrip\" as pp
+			where \"timeStamp\" BETWEEN (NOW() - INTERVAL '30') AND NOW()
+			and pc.\"powerStrip_id\" = '"++PowerStripId++"'
+			and pc.\"powerStrip_id\" = pp.id
+			order by socket_id asc	
+		) as status
+		inner join auth_user as au
+		on au.id = status.ui
+		where apikey = '"++ApiKey++"'
+		union 
+		select distinct '"++PowerStripId++"' as powerstripid, '0' as status
+		from auth_user
+		where apikey = '"++ApiKey++"'
+		order by status desc
+	) as answer
+	limit 1
+	";
+	queryAndSend(Sql, Socket).
 	
 queryAndSend(Sql, Socket) ->
 	Result = query(Sql),
