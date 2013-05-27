@@ -413,7 +413,7 @@ setName(SocketId, ApiKey, Socket, NewName) ->
 		[{SocketId_Integer}] ->
 			case query(Sql_setName) of
 				1 ->
-					send(Socket, "{\"socketid\":"++SocketId++",\"result\":true,\"newname\":"++NewName++"}");
+					send(Socket, "{\"socketid\":"++SocketId++",\"result\":true,\"newname\":\""++NewName++"\"}");
 				_Else ->
 					io:fwrite("Error when trying to rename Socket\n"),
 					send(Socket, "{\"socketid\":"++SocketId++",\"result\":false}")
