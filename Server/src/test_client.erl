@@ -34,7 +34,7 @@ start() ->
 	spawn(?MODULE, start, ["bregell.mine.nu", 39500, "SN-ANDRO2"]).
 	
 start(PowerStrip_Id) ->
-	start(localhost, 39500, PowerStrip_Id).
+	start("bregell.mine.nu", 39500, PowerStrip_Id).
 
 %% @doc
 %% Same as start/1 but alsp specify adress
