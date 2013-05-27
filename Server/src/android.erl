@@ -486,7 +486,7 @@ getSocketStatus(SocketId, ApiKey, Socket) ->
 	"
 	select row_to_json(answer) 
 	from(
-		select '"++SocketId++"' as socketid, status
+		select "++SocketId++" as socketid, status
 		from (
 			select status, user_id
 			from (
@@ -509,7 +509,7 @@ getPowerStripStatus(PowerStripId, ApiKey, Socket) ->
 	"
 	select row_to_json(answer) 
 	from(
-		select distinct '"++PowerStripId++"' as powerstripid, '1' as status
+		select distinct "++PowerStripId++" as powerstripid, 1 as status
 		from (
 			select distinct user_id as ui, pc.socket_id as sid, pc.\"powerStrip_id\" as pid
 			from \"powerStrip_consumption\" as pc, \"powerStrip_powerstrip\" as pp
@@ -522,7 +522,7 @@ getPowerStripStatus(PowerStripId, ApiKey, Socket) ->
 		on au.id = status.ui
 		where apikey = '"++ApiKey++"'
 		union 
-		select distinct '"++PowerStripId++"' as powerstripid, '0' as status
+		select distinct "++PowerStripId++" as powerstripid, 0 as status
 		from auth_user
 		where apikey = '"++ApiKey++"'
 		order by status desc
@@ -555,7 +555,7 @@ query(Sql) ->
 send(Socket, Message) ->
 	case gen_tcp:send(Socket, "Android#"++Message++"\n") of
 			ok ->
-				%%io:fwrite("Sent: Android#"++Message++"\n");
+				io:fwrite("Sent: Android#"++Message++"\n"),
 				io:fwrite("OK\n");
 			{error, _} ->
 				io:fwrite("Could not send Android#"++Message++"\n")
