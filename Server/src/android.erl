@@ -485,7 +485,7 @@ getSocketStatus(SocketId, ApiKey, Socket) ->
 		on au.id = status.user_id
 		where apikey = '"++ApiKey++"'
 	) as answer
-	";
+	",
 	queryAndSend(Sql, Socket).
 	
 getPowerStripStatus(PowerStripId, ApiKey, Socket) ->
@@ -512,7 +512,7 @@ getPowerStripStatus(PowerStripId, ApiKey, Socket) ->
 		order by status desc
 	) as answer
 	limit 1
-	";
+	",
 	queryAndSend(Sql, Socket).
 	
 queryAndSend(Sql, Socket) ->
