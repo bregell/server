@@ -250,14 +250,30 @@ getPowerStripsAndSockets(UserName, ApiKey, Socket) ->
 			(
 				select k.id, \"serialId\" as serialid, k.name, 
 					(
+						select status 
+						from(
+							(
+								select '1' as status
+								from \"powerStrip_consumption\" as pc
+								where \"timeStamp\" BETWEEN (NOW() - INTERVAL '30') AND NOW()
+								and pc.\"powerStrip_id\" = k.id
+								order by socket_id asc
+							)	
+							union 
+							select '0' as status
+						) as status
+						order by status desc
+						limit 1
+					),
+					(
 						select array_to_json(array_agg(row_to_json(a))) as sockets
 						from
 						(
-							SELECT id as socketid, name 
+							SELECT id as socketid, name, status 
 							FROM \"powerStrip_socket\" 
 							WHERE \"powerStrip_id\" = k.id
 						) as a
-					) 
+					)
 				from (
 					SELECT id, \"serialId\", user_id, name FROM \"powerStrip_powerstrip\"
 				) as k
