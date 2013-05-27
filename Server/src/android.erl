@@ -214,15 +214,15 @@ getSockets(PowerStripId, ApiKey, Socket) ->
 		select row_to_json(d)
 		from
 		(
-			select '"++PowerStripId++"' as powerstripid,
+			select "++PowerStripId++" as powerstripid,
 			(
 				select array_to_json(array_agg(row_to_json(a))) as sockets
 				from
 				(
-					select socketid, name
+					select socketid, name, status
 					from 
 					(
-						select pss.id as socketid, pss.name, user_id
+						select pss.id as socketid, pss.name, user_id, status
 						from \"powerStrip_socket\" as pss
 						inner join \"powerStrip_powerstrip\" as psp
 						on \"powerStrip_id\" = psp.id
@@ -253,14 +253,14 @@ getPowerStripsAndSockets(UserName, ApiKey, Socket) ->
 						select status 
 						from(
 							(
-								select '1' as status
+								select 1 as status
 								from \"powerStrip_consumption\" as pc
 								where \"timeStamp\" BETWEEN (NOW() - INTERVAL '30') AND NOW()
 								and pc.\"powerStrip_id\" = k.id
 								order by socket_id asc
 							)	
 							union 
-							select '0' as status
+							select 0 as status
 						) as status
 						order by status desc
 						limit 1
