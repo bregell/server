@@ -541,16 +541,16 @@ getPowerStripStatus(PowerStripId, ApiKey, Socket) ->
 getConsumptionDurationUser(UserName, ApiKey, Socket, Duration, Amount) ->
 	case Duration of
 		"year" ->
-			Intervall = integer_to_list(Amount)++"Y",
+			Intervall = Amount++"Y",
 			Divider = "8760";
 		"month" ->
-			Intervall = integer_to_list(Amount)++"Months",
+			Intervall = Amount++"Months",
 			Divider = "720";
 		"day" ->
-			Intervall = integer_to_list(Amount)++"D",
+			Intervall = Amount++"D",
 			Divider = "24";
 		"hour" ->
-			Intervall = integer_to_list(Amount)++"H",
+			Intervall = Amount++"H",
 			Divider = "1"
 	end,
 	Sql =
