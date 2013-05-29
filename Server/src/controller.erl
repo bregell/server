@@ -69,13 +69,16 @@ ack_list() ->
 ack_list(Data) ->
 	receive
 		{ack_request, {PowerStrip_SerialId, ReqestPid}} ->
+			io:fwrite("Ack Request:"++PowerStrip_SerialId++"\n"),
 			ack_list(lists:append(Data, [{PowerStrip_SerialId, ReqestPid}]));
 		{ack_checkout, PowerStrip_SerialId} ->
 			case lists:keyfind(PowerStrip_SerialId, 1, Data) of
 				{PowerStrip_SerialId, ReqestPid} ->
+					io:fwrite("Ack Checkout success:"++PowerStrip_SerialId++"\n"),
 					ReqestPid ! ok,
 					ack_list(lists:delete({PowerStrip_SerialId,ReqestPid}, Data));
 				false ->
+					io:fwrite("Ack Checkout failed:"++PowerStrip_SerialId++"\n"),
 					ack_list(Data)
 			end
 	end.		
@@ -94,6 +97,7 @@ mailbox() ->
 		{send, {PowerStrip_SerialId, Status, RequestSocket}} ->
 			spawn(?MODULE, send, [PowerStrip_SerialId, Status, RequestSocket]);
 		{ack, PowerStrip_SerialId} ->
+			io:fwrite(PowerStrip_SerialId++"\n"),
 			ack_list ! {ack_checkout, PowerStrip_SerialId};
 		{'DOWN',_,process,{input,_},_} ->
 			register(input, spawn(?MODULE, input ,[])),
@@ -144,10 +148,10 @@ send(PowerStrip_SerialId, Status, RequestSocket) ->
 						ok ->
 							ack_sucess(RequestSocket)
 					after 
-						3000 ->
+						10000 ->
+							io:fwrite("Request Timeout\n"),
 							ack_failed(RequestSocket)
 					end;
-					%%ack_sucess(RequestSocket);
 				{error, _} ->
 					io:fwrite("Could not send to: "++PowerStrip_SerialId++"\n"),
 					ack_failed(RequestSocket)

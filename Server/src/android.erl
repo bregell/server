@@ -549,8 +549,8 @@ query(Sql) ->
 send(Socket, Message) ->
 	case gen_tcp:send(Socket, "Android#"++Message++"\n") of
 			ok ->
-				io:fwrite("Sent: Android#"++Message++"\n"),
-				io:fwrite("OK\n");
+				%%io:fwrite("Sent: Android#"++Message++"\n"),
+				io:fwrite("Sent to Android OK\n");
 			{error, _} ->
 				io:fwrite("Could not send Android#"++Message++"\n")
 	end.
