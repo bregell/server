@@ -52,6 +52,13 @@ decode([Package], Socket) ->
 							[EDate,ETime] = string:tokens(EndDate, " "),
 							EndTimestamp = EDate++" "++string:join(string:tokens(ETime, "-"), ":"),
 							getConsumptionUser(UserName, ApiKey, Socket, StartTimestamp, EndTimestamp);
+						[
+							{"apikey", ApiKey},
+							{"duration",Duration},
+							{"amount",Amount}
+						
+						] ->
+							getConsumptionDurationUser(UserName, ApiKey, Socket, Duration, Amount);
 						_Else -> 
 							io:fwrite("Bad data for getConsumptionSocket request\n"),
 							send(Socket, "{\"socketid\":"++UserName++",\"result\":false}")
@@ -530,6 +537,56 @@ getPowerStripStatus(PowerStripId, ApiKey, Socket) ->
 	limit 1
 	",
 	queryAndSend(Sql, Socket).
+	
+getConsumptionDurationUser(UserName, ApiKey, Socket, Duration, Amount) ->
+	case Duration of
+		"year" ->
+			Intervall = integer_to_list(Amount)++"Y",
+			Divider = "8760";
+		"month" ->
+			Intervall = integer_to_list(Amount)++"Months",
+			Divider = "720";
+		"day" ->
+			Intervall = integer_to_list(Amount)++"D",
+			Divider = "24";
+		"hour" ->
+			Intervall = integer_to_list(Amount)++"H",
+			Divider = "1"
+	end,
+	Sql =
+	"
+		select row_to_json(t)
+		from
+		(
+			select avg(\"activePower\")*("++Divider++") as activepower, date_trunc('"++Duration++"', \"timeStamp\") as timestamp
+			from \"powerStrip_consumption\" as psc
+			inner join \"powerStrip_powerstrip\" as psp
+			on psc.\"powerStrip_id\" = psp.id
+			where psc.\"powerStrip_id\" IN (
+				select k.id
+				from (
+					SELECT id, \"serialId\", user_id, name FROM \"powerStrip_powerstrip\"
+				) as k
+				inner join auth_user 
+				on user_id = auth_user.id
+				where username = '"++UserName++"'
+				and apikey = '"++ApiKey++"'
+			)
+			and \"timeStamp\" BETWEEN (CURRENT_TIMESTAMP - INTERVAL '"++Intervall++"')  AND CURRENT_TIMESTAMP
+			group by date_trunc('"++Duration++"', \"timeStamp\"), \"user_id\"
+			order by date_trunc('"++Duration++"', \"timeStamp\") asc
+		) as t		
+	",
+	Result = query(Sql),
+	case Result of
+		[] ->
+			send(Socket, "{\"username\":"++UserName++", \"result\":nodata}");
+		_Else ->
+			Data = [ A || {A} <- Result],
+			Array = string:join(Data, ","),
+			send(Socket, "{\"username\":"++UserName++", \"data\":["++Array++"]}")
+	end.
+		
 	
 queryAndSend(Sql, Socket) ->
 	Result = query(Sql),

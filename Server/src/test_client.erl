@@ -29,9 +29,16 @@ stress_test(Total,Current) ->
 			stress_test(Total, Current+1)
 	end.
 	
+%%start() ->
+	%%spawn(?MODULE, start, ["bregell.mine.nu", 39500, "SN-ANDRO1"]),
+	%%spawn(?MODULE, start, ["bregell.mine.nu", 39500, "SN-ANDRO2"]).
+	
 start() ->
-	spawn(?MODULE, start, ["bregell.mine.nu", 39500, "SN-ANDRO1"]),
-	spawn(?MODULE, start, ["bregell.mine.nu", 39500, "SN-ANDRO2"]).
+	spawn(?MODULE, start, ["bregell.mine.nu", 39500, "Bregell"]),
+	spawn(?MODULE, start, ["bregell.mine.nu", 39500, "Lagerman"]),
+	spawn(?MODULE, start, ["bregell.mine.nu", 39500, "Phan"]),
+	spawn(?MODULE, start, ["bregell.mine.nu", 39500, "Arvidsson"]),
+	spawn(?MODULE, start, ["bregell.mine.nu", 39500, "Swetzen"]).
 	
 start(PowerStrip_Id) ->
 	start("bregell.mine.nu", 39500, PowerStrip_Id).
@@ -101,7 +108,9 @@ send(Socket, PowerStrip_Id, Status, Pid) ->
 % Error in process <0.396.0> with exit value: {undef,[{test_client,reciever,["SN-ANDRO1:0;D;D;D\n",#Port<0.2442>,<0.32.0>,"SN-ANDRO1"],[]}]}
 
 receiver(Packet, Socket, Pid, PowerStrip_Id) ->
-	case gen_tcp:send(Socket, PowerStrip_Id++":OK\n") of
+	Ack_Packet = PowerStrip_Id++":OK\n",
+	io:fwrite(Ack_Packet),
+	case gen_tcp:send(Socket, Ack_Packet) of
 		ok ->
 			Strip = fun(A) -> string:sub_string(A, 1, string:len(A)-1) end,
 			Data = Strip(Packet),
