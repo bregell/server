@@ -44,21 +44,11 @@ decode([Package], Socket) ->
 					case Data of
 						[
 							{"apikey", ApiKey},
-							{"startdate",StartDate},
-							{"enddate",EndDate}
-						] ->
-							[SDate,STime] = string:tokens(StartDate, " "),
-							StartTimestamp = SDate++" "++string:join(string:tokens(STime, "-"), ":"),
-							[EDate,ETime] = string:tokens(EndDate, " "),
-							EndTimestamp = EDate++" "++string:join(string:tokens(ETime, "-"), ":"),
-							getConsumptionUser(UserName, ApiKey, Socket, StartTimestamp, EndTimestamp);
-						[
-							{"apikey", ApiKey},
 							{"duration",Duration},
 							{"amount",Amount}
 						
 						] ->
-							getConsumptionDurationUser(UserName, ApiKey, Socket, Duration, Amount);
+							getConsumptionUser(UserName, ApiKey, Socket, Duration, Amount);
 						_Else -> 
 							io:fwrite("Bad data for getConsumptionSocket request\n"),
 							send(Socket, "{\"socketid\":"++UserName++",\"result\":false}")
@@ -78,16 +68,11 @@ decode([Package], Socket) ->
 					case Data of
 						[
 							{"apikey", ApiKey},
-							{"startdate", StartDate},
-							{"enddate", EndDate}
+							{"duration",Duration},
+							{"amount",Amount}
+						
 						] ->
-							%%{powerstripid:5,request:consumption,apikey:apikey1011,startdate:3913-06-09 00-00-00.000+0100,enddate:3913-06-10 00-00-00.000+0100}
-							%%powerstripid:12,request:consumption,apikey:1a2b3c4d5e6f7g,startdate:2010-01-01 00-00-00.000+0000,enddate:2014-01-01 00-00-00.000+0000
-							[SDate,STime] = string:tokens(StartDate, " "),
-							StartTimestamp = SDate++" "++string:join(string:tokens(STime, "-"), ":"),
-							[EDate,ETime] = string:tokens(EndDate, " "),
-							EndTimestamp = EDate++" "++string:join(string:tokens(ETime, "-"), ":"),
-							getConsumptionPowerStrip(PowerStripId, ApiKey, Socket, StartTimestamp, EndTimestamp);
+							getConsumptionPowerStrip(PowerStripId, ApiKey, Socket, Duration, Amount);
 						_Else -> 
 							io:fwrite("Bad data for getConsumptionPowerStrip request\n"),
 							send(Socket, "{\"powerstripid\":"++PowerStripId++",\"result\":false}")
@@ -118,14 +103,11 @@ decode([Package], Socket) ->
 					case Data of
 						[
 							{"apikey", ApiKey},
-							{"startdate",StartDate},
-							{"enddate",EndDate}
+							{"duration",Duration},
+							{"amount",Amount}
+						
 						] ->
-							[SDate,STime] = string:tokens(StartDate, " "),
-							StartTimestamp = SDate++" "++string:join(string:tokens(STime, "-"), ":"),
-							[EDate,ETime] = string:tokens(EndDate, " "),
-							EndTimestamp = EDate++" "++string:join(string:tokens(ETime, "-"), ":"),
-							getConsumptionSocket(SocketId, ApiKey, Socket, StartTimestamp, EndTimestamp);
+							getConsumptionSocket(SocketId, ApiKey, Socket, Duration, Amount);						
 						_Else -> 
 							io:fwrite("Bad data for getConsumptionSocket request\n"),
 							send(Socket, "{\"socketid\":"++SocketId++",\"result\":false}")
@@ -294,13 +276,14 @@ getPowerStripsAndSockets(UserName, ApiKey, Socket) ->
 	",
 	queryAndSend(Sql, Socket).
 
-getConsumptionUser(UserName, ApiKey, Socket, StartDate, EndDate) ->
-	Sql = 
+getConsumptionUser(UserName, ApiKey, Socket, Duration, Amount) ->
+	{Interval, Divider} = duration(Duration, Amount),
+	Sql =
 	"
 		select row_to_json(t)
 		from
 		(
-			select sum(\"activePower\") as activepower, \"timeStamp\" as timestamp
+			select avg(\"activePower\")*("++Divider++") as activepower, date_trunc('"++Duration++"', \"timeStamp\") as timestamp
 			from \"powerStrip_consumption\" as psc
 			inner join \"powerStrip_powerstrip\" as psp
 			on psc.\"powerStrip_id\" = psp.id
@@ -314,21 +297,23 @@ getConsumptionUser(UserName, ApiKey, Socket, StartDate, EndDate) ->
 				where username = '"++UserName++"'
 				and apikey = '"++ApiKey++"'
 			)
-			and \"timeStamp\" BETWEEN '"++StartDate++"' AND '"++EndDate++"'
-			group by \"timeStamp\", \"user_id\"
-		) as t	
+			and \"timeStamp\" BETWEEN (CURRENT_TIMESTAMP - INTERVAL '"++Interval++"')  AND CURRENT_TIMESTAMP
+			group by date_trunc('"++Duration++"', \"timeStamp\")
+			order by date_trunc('"++Duration++"', \"timeStamp\") asc
+		) as t		
 	",
 	Result = query(Sql),
 	case Result of
 		[] ->
-			send(Socket, "{\"username\":"++UserName++", \"result\":false}");
+			send(Socket, "{\"username\":"++UserName++", \"result\":nodata}");
 		_Else ->
 			Data = [ A || {A} <- Result],
 			Array = string:join(Data, ","),
 			send(Socket, "{\"username\":"++UserName++", \"data\":["++Array++"]}")
 	end.
 	
-getConsumptionPowerStrip(PowerStripId, ApiKey, Socket, StartDate, EndDate) ->
+getConsumptionPowerStrip(PowerStripId, ApiKey, Socket, Duration, Amount) ->
+	{Interval, Divider} = duration(Duration, Amount),
 	Sql = 
 	"
 		select row_to_json(t)
@@ -338,13 +323,13 @@ getConsumptionPowerStrip(PowerStripId, ApiKey, Socket, StartDate, EndDate) ->
 			from auth_user as au
 			inner join
 			(
-				select sum(\"activePower\") as activepower, \"timeStamp\" as timestamp, user_id
+				select avg(\"activePower\")*("++Divider++") as activepower, date_trunc('"++Duration++"', \"timeStamp\") as timestamp, user_id
 				from \"powerStrip_consumption\" as psc
 				inner join \"powerStrip_powerstrip\" as psp
 				on psc.\"powerStrip_id\" = psp.id
 				where psc.\"powerStrip_id\" = '"++PowerStripId++"'
-				and \"timeStamp\" BETWEEN '"++StartDate++"' AND '"++EndDate++"'
-				group by \"timeStamp\", \"user_id\"
+				and \"timeStamp\" BETWEEN (CURRENT_TIMESTAMP - INTERVAL '"++Interval++"')  AND CURRENT_TIMESTAMP
+				group by date_trunc('"++Duration++"', \"timeStamp\"), \"user_id\"
 			) as atu
 			on atu.user_id = au.id
 			where au.apikey = '"++ApiKey++"'
@@ -361,7 +346,8 @@ getConsumptionPowerStrip(PowerStripId, ApiKey, Socket, StartDate, EndDate) ->
 			send(Socket, "{\"powerstripid\":"++PowerStripId++", \"data\":["++Array++"]}")
 	end.
 		
-getConsumptionSocket(SocketId, ApiKey, Socket, StartDate, EndDate) ->
+getConsumptionSocket(SocketId, ApiKey, Socket, Duration, Amount) ->
+	{Interval, Divider} = duration(Duration, Amount),
 	Sql = 
 	"
 		select row_to_json(t)
@@ -371,12 +357,13 @@ getConsumptionSocket(SocketId, ApiKey, Socket, StartDate, EndDate) ->
 			from auth_user as au
 			inner join
 			(
-				select \"activePower\" as activepower, \"timeStamp\" as timestamp, user_id 
+				select avg(\"activePower\")*("++Divider++") as activepower, date_trunc('"++Duration++"', \"timeStamp\") as timestamp, user_id 
 				from \"powerStrip_consumption\" as psc
 				inner join \"powerStrip_powerstrip\" as psp
 				on psc.\"powerStrip_id\" = psp.id
 				where psc.socket_id = '"++SocketId++"'
-				and \"timeStamp\" BETWEEN '"++StartDate++"' AND '"++EndDate++"'
+				and \"timeStamp\" BETWEEN (CURRENT_TIMESTAMP - INTERVAL '"++Interval++"')  AND CURRENT_TIMESTAMP
+				group by date_trunc('"++Duration++"', \"timeStamp\"), user_id
 			) as atu
 			on atu.user_id = au.id
 			where au.apikey = '"++ApiKey++"'
@@ -538,56 +525,6 @@ getPowerStripStatus(PowerStripId, ApiKey, Socket) ->
 	",
 	queryAndSend(Sql, Socket).
 	
-getConsumptionDurationUser(UserName, ApiKey, Socket, Duration, Amount) ->
-	case Duration of
-		"year" ->
-			Intervall = Amount++"Y",
-			Divider = "8760";
-		"month" ->
-			Intervall = Amount++"Months",
-			Divider = "720";
-		"day" ->
-			Intervall = Amount++"D",
-			Divider = "24";
-		"hour" ->
-			Intervall = Amount++"H",
-			Divider = "1"
-	end,
-	Sql =
-	"
-		select row_to_json(t)
-		from
-		(
-			select avg(\"activePower\")*("++Divider++") as activepower, date_trunc('"++Duration++"', \"timeStamp\") as timestamp
-			from \"powerStrip_consumption\" as psc
-			inner join \"powerStrip_powerstrip\" as psp
-			on psc.\"powerStrip_id\" = psp.id
-			where psc.\"powerStrip_id\" IN (
-				select k.id
-				from (
-					SELECT id, \"serialId\", user_id, name FROM \"powerStrip_powerstrip\"
-				) as k
-				inner join auth_user 
-				on user_id = auth_user.id
-				where username = '"++UserName++"'
-				and apikey = '"++ApiKey++"'
-			)
-			and \"timeStamp\" BETWEEN (CURRENT_TIMESTAMP - INTERVAL '"++Intervall++"')  AND CURRENT_TIMESTAMP
-			group by date_trunc('"++Duration++"', \"timeStamp\"), \"user_id\"
-			order by date_trunc('"++Duration++"', \"timeStamp\") asc
-		) as t		
-	",
-	Result = query(Sql),
-	case Result of
-		[] ->
-			send(Socket, "{\"username\":"++UserName++", \"result\":nodata}");
-		_Else ->
-			Data = [ A || {A} <- Result],
-			Array = string:join(Data, ","),
-			send(Socket, "{\"username\":"++UserName++", \"data\":["++Array++"]}")
-	end.
-		
-	
 queryAndSend(Sql, Socket) ->
 	Result = query(Sql),
 	case Result of 
@@ -626,4 +563,21 @@ controlSocket(SerialID, 3, Mode, Socket) ->
 	controller ! {send, {SerialID, "D;D;"++Mode++";D", Socket}};
 controlSocket(SerialID, 4, Mode, Socket) ->
 	controller ! {send, {SerialID, "D;D;D;"++Mode, Socket}}.
+	
+duration(Duration, Amount)->
+	case Duration of
+		"year" ->
+			Interval = Amount++"Y",
+			Divider = "8760";
+		"month" ->
+			Interval = Amount++"Months",
+			Divider = "720";
+		"day" ->
+			Interval = Amount++"D",
+			Divider = "24";
+		"hour" ->
+			Interval = Amount++"H",
+			Divider = "1"
+	end,
+	{Interval, Divider}.
 	
