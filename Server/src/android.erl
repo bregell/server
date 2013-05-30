@@ -280,27 +280,29 @@ getConsumptionUser(UserName, ApiKey, Socket, Duration, Amount) ->
 	{Interval, Divider} = duration(Duration, Amount),
 	Sql =
 	"
-		select row_to_json(t)
-		from
+		select sum(activepower), timestamp
+		from 
 		(
-			select avg(\"activePower\")*("++Divider++") as activepower, date_trunc('"++Duration++"', \"timeStamp\") as timestamp
-			from \"powerStrip_consumption\" as psc
-			inner join \"powerStrip_powerstrip\" as psp
-			on psc.\"powerStrip_id\" = psp.id
-			where psc.\"powerStrip_id\" IN (
-				select k.id
-				from (
-					SELECT id, \"serialId\", user_id, name FROM \"powerStrip_powerstrip\"
-				) as k
-				inner join auth_user 
-				on user_id = auth_user.id
-				where username = '"++UserName++"'
-				and apikey = '"++ApiKey++"'
+			select avg(\"activePower\")*("++Divider++") as activepower, date_trunc('"++Duration++"', \"timeStamp\") as timestamp, socket_id
+			from \"powerStrip_consumption\"
+			where \"powerStrip_id\" IN
+			(
+				select id
+				from \"powerStrip_powerstrip\"
+				where user_id =
+					(
+						select id 
+						from auth_user
+						where username = '"++UserName++"'
+						and apikey = '"++ApiKey++"'
+					)
 			)
 			and \"timeStamp\" BETWEEN (CURRENT_TIMESTAMP - INTERVAL '"++Interval++"')  AND CURRENT_TIMESTAMP
-			group by date_trunc('"++Duration++"', \"timeStamp\")
-			order by date_trunc('"++Duration++"', \"timeStamp\") asc
-		) as t		
+			group by date_trunc('"++Duration++"', \"timeStamp\"), socket_id
+			order by socket_id asc
+		) as socket
+		group by timestamp
+		order by timestamp asc		
 	",
 	Result = query(Sql),
 	case Result of
