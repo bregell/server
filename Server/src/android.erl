@@ -319,20 +319,21 @@ getConsumptionPowerStrip(PowerStripId, ApiKey, Socket, Duration, Amount) ->
 		select row_to_json(t)
 		from
 		(
-			select activepower, timestamp 
+			select sum(activepower) as activepower, timestamp 
 			from auth_user as au
 			inner join
 			(
-				select avg(\"activePower\")*("++Divider++") as activepower, date_trunc('"++Duration++"', \"timeStamp\") as timestamp, user_id
+				select avg(\"activePower\")*("++Divider++") as activepower, date_trunc('"++Duration++"', \"timeStamp\") as timestamp, user_id, socket_id
 				from \"powerStrip_consumption\" as psc
 				inner join \"powerStrip_powerstrip\" as psp
 				on psc.\"powerStrip_id\" = psp.id
 				where psc.\"powerStrip_id\" = '"++PowerStripId++"'
 				and \"timeStamp\" BETWEEN (CURRENT_TIMESTAMP - INTERVAL '"++Interval++"')  AND CURRENT_TIMESTAMP
-				group by date_trunc('"++Duration++"', \"timeStamp\"), \"user_id\"
+				group by date_trunc('"++Duration++"', \"timeStamp\"), user_id, socket_id
 			) as atu
 			on atu.user_id = au.id
 			where au.apikey = '"++ApiKey++"'
+			group by timestamp
 			order by timestamp asc
 		) as t
 	",
