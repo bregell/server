@@ -136,22 +136,20 @@ send(PowerStrip_SerialId, Status, RequestSocket) ->
 	receive 
 		{found, Socket} ->
 			io:fwrite("Found\n"),
+			ack_list ! {ack_request, {PowerStrip_SerialId, self()}},
 			case gen_tcp:send(Socket, PowerStrip_SerialId++":"++Status++"\n") of
 				ok ->
-					PowerStrip_Id = integer_to_list(sql_builder:get_powerStripId(PowerStrip_SerialId)),
-					SocketId = [integer_to_list(N) || {N} <- sql_builder:get_socketId(PowerStrip_Id)],
-					Sql = sql_builder:new_status(SocketId, string:tokens(Status, ";")),
-					odbc_unit ! {insert, Sql},
-					ack_list ! {ack_request, {PowerStrip_SerialId, self()}},
-					io:fwrite("Waiting for ack\n"),
 					receive 
 						ok ->
 							ack_sucess(RequestSocket)
 					after 
 						10000 ->
-							io:fwrite("Request Timeout\n"),
 							ack_failed(RequestSocket)
-					end;
+					end,
+					PowerStrip_Id = integer_to_list(sql_builder:get_powerStripId(PowerStrip_SerialId)),
+					SocketId = [integer_to_list(N) || {N} <- sql_builder:get_socketId(PowerStrip_Id)],
+					Sql = sql_builder:new_status(SocketId, string:tokens(Status, ";")),
+					odbc_unit ! {insert, Sql};
 				{error, _} ->
 					io:fwrite("Could not send to: "++PowerStrip_SerialId++"\n"),
 					ack_failed(RequestSocket)

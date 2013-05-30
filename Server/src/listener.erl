@@ -52,7 +52,7 @@ listener(Msg, Listen) ->
 	case gen_tcp:accept(Listen) of
 		{ok, Socket} ->
 			Msg ! new_listener,
-			receiver(Socket),
+			?MODULE:receiver(Socket),
 			gen_tcp:close(Socket),
 			io:fwrite("\n");
 		{error, Reason} ->
@@ -107,12 +107,12 @@ receiver(Socket) ->
 							io:fwrite("\n")
 					end
 			end,
-			receiver(Socket);
+			?MODULE:receiver(Socket);
 		{error, closed} ->
-			controller ! {remove,{Socket}},
+			%%controller ! {remove,{Socket}},
 			io:fwrite("Socket closed\n");
 		{error, _} ->
-			controller ! {remove,{Socket}},
+			%%controller ! {remove,{Socket}},
 			io:fwrite("Could not recieve!\n")
 	end.
 	

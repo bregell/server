@@ -29,16 +29,20 @@ stress_test(Total,Current) ->
 			stress_test(Total, Current+1)
 	end.
 	
-%%start() ->
-	%%spawn(?MODULE, start, ["bregell.mine.nu", 39500, "SN-ANDRO1"]),
-	%%spawn(?MODULE, start, ["bregell.mine.nu", 39500, "SN-ANDRO2"]).
-	
 start() ->
-	spawn(?MODULE, start, ["bregell.mine.nu", 39500, "Bregell"]),
-	spawn(?MODULE, start, ["bregell.mine.nu", 39500, "Lagerman"]),
-	spawn(?MODULE, start, ["bregell.mine.nu", 39500, "Phan"]),
-	spawn(?MODULE, start, ["bregell.mine.nu", 39500, "Arvidsson"]),
-	spawn(?MODULE, start, ["bregell.mine.nu", 39500, "Swetzen"]).
+	spawn(?MODULE, start, ["localhost", 39500, "SN-ANDRO1"]),
+	timer:sleep(timer:seconds(3)),
+	spawn(?MODULE, start, ["localhost", 39500, "SN-ANDRO2"]),
+	timer:sleep(timer:seconds(3)),
+	spawn(?MODULE, start, ["localhost", 39500, "Bregell"]),
+	timer:sleep(timer:seconds(3)),
+	spawn(?MODULE, start, ["localhost", 39500, "Lagerman"]),
+	timer:sleep(timer:seconds(3)),
+	spawn(?MODULE, start, ["localhost", 39500, "Phan"]),
+	timer:sleep(timer:seconds(3)),
+	spawn(?MODULE, start, ["localhost", 39500, "Arvidsson"]),
+	timer:sleep(timer:seconds(3)),
+	spawn(?MODULE, start, ["localhost", 39500, "Swetzen"]).
 	
 start(PowerStrip_Id) ->
 	start("bregell.mine.nu", 39500, PowerStrip_Id).
