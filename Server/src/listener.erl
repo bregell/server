@@ -86,7 +86,7 @@ receiver(Socket) ->
 					%%io:fwrite(Output++"\n"),
 					case Output of
 						[PowerStrip_SerialId,Power,Status,Date,Time] ->
-							%io:fwrite(Time ++"\n"),
+							%%io:fwrite(Time ++"\n"),
 							controller ! {new,{PowerStrip_SerialId,Socket}},
 							Power_list = string:tokens(Power, ";"),
 							Status_list = string:tokens(Status, ";"),
@@ -95,8 +95,8 @@ receiver(Socket) ->
 							spawn(sql_builder,insert_from_powerstrip,[PowerStrip_SerialId,Power_list,Status_list,Date_list,Time_list]);							
 							%%analyzer ! {read, PowerStrip_SerialId};
 						[PowerStrip_SerialId, [79,75|_]] ->
-							io:fwrite(Output++"\n"),
-							io:fwrite("Ack recieved from power strip\n"),
+							%%io:fwrite(Output++"\n"),
+							%%io:fwrite("Ack recieved from power strip\n"),
 							controller ! {ack, PowerStrip_SerialId};
 						[PowerStrip_SerialId, Status] ->
 							%%io:fwrite(Status++"\n"),

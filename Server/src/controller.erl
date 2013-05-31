@@ -63,16 +63,16 @@ ack_list() ->
 ack_list(Data) ->
 	receive
 		{ack_request, {PowerStrip_SerialId, ReqestPid}} ->
-			io:fwrite("Ack Request:"++PowerStrip_SerialId++"\n"),
+			%%io:fwrite("Ack Request:"++PowerStrip_SerialId++"\n"),
 			ack_list(lists:append(Data, [{PowerStrip_SerialId, ReqestPid}]));
 		{ack_checkout, PowerStrip_SerialId} ->
 			case lists:keyfind(PowerStrip_SerialId, 1, Data) of
 				{PowerStrip_SerialId, ReqestPid} ->
-					io:fwrite("Ack Checkout success:"++PowerStrip_SerialId++"\n"),
+					%%io:fwrite("Ack Checkout success:"++PowerStrip_SerialId++"\n"),
 					ReqestPid ! ok,
 					ack_list(lists:delete({PowerStrip_SerialId,ReqestPid}, Data));
 				false ->
-					io:fwrite("Ack Checkout failed:"++PowerStrip_SerialId++"\n"),
+					%%io:fwrite("Ack Checkout failed:"++PowerStrip_SerialId++"\n"),
 					ack_list(Data)
 			end
 	end.		
