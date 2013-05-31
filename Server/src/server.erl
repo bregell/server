@@ -29,19 +29,40 @@ start() ->
 %% @spec (Port) -> (ok() | pid())
 %% Port = port()
 start(Port) ->
-	odbc:start(),
+	process_flag(trap_exit, true),
 	register(controller, spawn_link(controller, start, [])),
-	register(analyzer, spawn_link(analyzer, start, [])),
+	monitor(process, controller),
+	%%register(analyzer, spawn_link(analyzer, start, [])),
+	%%monitor(process, analyzer),
+	register(odbc_unit, spawn_link(odbc_unit, start, [])),
+	monitor(process, odbc_unit),
 	register(listener, spawn_link(listener, start, [Port])),
-	register(schedule, spawn_link(schedule_worker, start, [])),	
-	loop().
+	monitor(process, listener),
+	register(schedule, spawn_link(schedule_worker, start, [])),
+	monitor(process, schedule),	
+	loop(Port).
 
 %% @doc
 %% Top instance of the server handles all messages sent to top level.
 %% @end
-loop() ->
+loop(Port) ->
 	receive
+		{'DOWN',_,process,{listener,_},_} ->
+			register(listener, spawn_link(listener, start, [Port])),
+			monitor(process, listener);
+		{'DOWN',_,process,{controller,_},_} ->
+			register(controller, spawn_link(controller, start, [])),
+			monitor(process, controller);
+		{'DOWN',_,process,{analyzer,_},_} ->
+			register(analyzer, spawn_link(analyzer, start, [])),
+			monitor(process, analyzer);
+		{'DOWN',_,process,{schedule,_},_} ->
+			register(schedule, spawn_link(schedule_worker, start, [])),
+			monitor(process, schedule);
+		{'DOWN',_,process,{odbc_unit,_},_} ->
+			register(odbc_unit, spawn_link(odbc_unit, start, [])),
+			monitor(process, odbc_unit);
 		_ ->
 			io:fwrite("Message received in server top level \n")
 	end,
-	loop().
+	loop(Port).

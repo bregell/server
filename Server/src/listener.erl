@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/1, server/1, listener/2, loop/1]).
+-export([start/1, server/1, listener/2, loop/1, receiver/1]).
 
 
 
@@ -22,7 +22,7 @@
 %% @spec (Port) -> pid()
 %% Port = inet:portnumber() 
 start(Port)->
-	spawn_link(?MODULE, server, [Port]).
+	server(Port).
 
 %% @doc
 %% The actual server starts a listener and goes into the loop
@@ -30,9 +30,9 @@ start(Port)->
 %% @spec (Port) -> (pid() | string()) 
 %% Port = inet:portnumber()
 server(Port) ->
-	case gen_tcp:listen(Port, [list, {active, false}, {packet, 0}]) of
+	case gen_tcp:listen(Port, [list, {active, false}, {packet, line}]) of
 		{ok, Listen} ->
-			spawn_link(?MODULE, listener, [self(), Listen]),
+			spawn(?MODULE, listener, [self(), Listen]),
 			loop(Listen);
 		{error, Reason} ->
 			io:fwrite("Error cannot listen on that port \n"),  
@@ -52,13 +52,13 @@ listener(Msg, Listen) ->
 	case gen_tcp:accept(Listen) of
 		{ok, Socket} ->
 			Msg ! new_listener,
-			receiver(Socket),
-			gen_tcp:close(Socket);
+			?MODULE:receiver(Socket),
+			gen_tcp:close(Socket),
+			io:fwrite("\n");
 		{error, Reason} ->
-			io:fwrite("Could not accept "),
-			io:fwrite(Reason),
-			io:fwrite("\n"),
-			Msg ! new_listener
+			Msg ! new_listener,
+			[String,_] = Reason,
+			io:fwrite("Could not accept "++String++"\n")
 	end.
 
 %% @doc
@@ -69,49 +69,51 @@ listener(Msg, Listen) ->
 %% Msg = pid() 
 %% Socket = socket()
 receiver(Socket) ->
-	io:fwrite("Waiting for package\n"),
+	%%io:fwrite("Waiting for package\n"),
 	%% @todo Add some good timeout value maybe.
 	case gen_tcp:recv(Socket, 0) of
 		{ok, Package} ->
-			io:fwrite("Recieve OK\n"),
-			%% Parse string into list 
-			Output = string:tokens(Package, ":"),
-			case Output of
-				[PowerStrip_SerialId,Data,Status,Date,Time] ->
-					io:fwrite(Package),
-					io:fwrite("\n"),
-					controller ! {new,{PowerStrip_SerialId,Socket}},
-					%% @issue Maybe cange this to some kind of message passing solution.
-					try (sql_builder:input([PowerStrip_SerialId,string:tokens(Data, ";"),string:tokens(Status, ";"),string:tokens(Date, ";"),string:tokens(Time, ";")])) of
-						{ok, _} ->
-							io:fwrite("Data saved without problems!\n")
-					catch
-						{error, Reason} ->
-							io:fwrite("Error when saved data!\n"),
-							io:fwrite(Reason),
-							io:fwrite("\n");
-						_ ->
-							io:fwrite("Strange things is happening!\n")
-					end,
-					analyzer ! {read, PowerStrip_SerialId};
-				[PowerStrip_SerialId, Status] ->
-					odbc_unit:input(sql_builder:new_status(PowerStrip_SerialId, string:tokens(Status, ";"))),
-					controller ! {send,{PowerStrip_SerialId, Status}};
-				[PowerStrip_SerialId] ->
-					controller ! {new,{PowerStrip_SerialId, Socket}},
-					io:fwrite("One liner.\n"),
-					io:fwrite(Package),
-					io:fwrite("\n");
-				_ ->
-					io:fwrite("Error no matching case, tcp packet thrown away.\n"),
-					io:fwrite(Package),
-					io:fwrite("\n")
+			%% Parse string into list
+			case string:tokens(Package, "#") of
+				["Android"|Data] ->
+					spawn(android, decode, [Data, Socket]);
+				["PowerStrip"|Data] ->
+					io:frite(Data),
+					spawn(powerstrip, decode, [Data, Socket]);
+				_Else ->
+					%%io:fwrite(Package),
+					Output = string:tokens(string:sub_string(Package, 1, string:len(Package)-1), ":"),
+					%%io:fwrite(Output++"\n"),
+					case Output of
+						[PowerStrip_SerialId,Power,Status,Date,Time] ->
+							%%io:fwrite(Time ++"\n"),
+							controller ! {new,{PowerStrip_SerialId,Socket}},
+							Power_list = string:tokens(Power, ";"),
+							Status_list = string:tokens(Status, ";"),
+							Date_list = string:tokens(Date, ";"),
+							Time_list = string:tokens(Time, ";"),
+							spawn(sql_builder,insert_from_powerstrip,[PowerStrip_SerialId,Power_list,Status_list,Date_list,Time_list]);							
+							%%analyzer ! {read, PowerStrip_SerialId};
+						[PowerStrip_SerialId, [79,75|_]] ->
+							%%io:fwrite(Output++"\n"),
+							%%io:fwrite("Ack recieved from power strip\n"),
+							controller ! {ack, PowerStrip_SerialId};
+						[PowerStrip_SerialId, Status] ->
+							%%io:fwrite(Status++"\n"),
+							controller ! {send,{PowerStrip_SerialId, Status, Socket}};
+						_Else ->
+							io:fwrite("Error no matching case, tcp packet thrown away.\n"),
+							io:fwrite(Package),
+							io:fwrite("\n")
+					end
 			end,
-			receiver(Socket);
-		{error, Reason} ->
-			io:fwrite("Could not recieve!\n"),
-			io:fwrite(Reason),
-			io:fwrite("\n")
+			?MODULE:receiver(Socket);
+		{error, closed} ->
+			%%controller ! {remove,{Socket}},
+			io:fwrite("Socket closed\n");
+		{error, _} ->
+			%%controller ! {remove,{Socket}},
+			io:fwrite("Could not recieve!\n")
 	end.
 	
 %% @doc
@@ -122,8 +124,10 @@ receiver(Socket) ->
 loop(Listen) ->
 	receive
 		new_listener ->
-			spawn_link(?MODULE, listener, [self(), Listen]);
-		_ ->
-			io:fwrite("Bad Msg \n")
-	end,
-	loop(Listen).
+			spawn(?MODULE, listener, [self(), Listen]),
+			loop(Listen);
+		_Else ->
+			io:fwrite("Bad Msg\n"),
+			loop(Listen)
+	end.
+	

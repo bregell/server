@@ -7,7 +7,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([input/1,bulk_input/1]).
+-export([start/0,worker/1,input/1,bulk_input/1]).
 
 
 
@@ -15,6 +15,23 @@
 %% Internal functions
 %% ====================================================================
 
+start() ->
+	odbc:start(),
+	spawn(?MODULE, worker, [self()]),
+	spawn(?MODULE, worker, [self()]),
+	spawn(?MODULE, worker, [self()]),
+	spawn(?MODULE, worker, [self()]),
+	mailbox().
+
+query(Sql, Conn) ->
+	[H|_] = Sql,
+	case is_list(H) of
+		true ->
+			bulk_input(Sql, Conn);
+		false ->
+			input(Sql, Conn)
+	end.
+	
 %% @doc 
 %% Takes a list of SQL Strings and sends them to the database one by one.
 %% @end
@@ -22,39 +39,62 @@
 %% Sql = [string()]
 input(Sql) ->
 	{ok, Conn} = odbc:connect("DSN=PostgreSQL30", []),
-	Function = fun(A) -> (try (odbc:sql_query(Conn, A)) of
-							  {updated, N} ->
-								{updated, N};
-							  {selected, C, R} ->
-								{selected, C, R};
-							  {error, Reason} ->
-								{error, Reason}
-						 catch 
-							 {error, Reason} ->
-								{error, Reason}
-						 end) end,
-	Return = [Function(N) || N <- Sql],
+	Result = input(Sql, Conn),
 	odbc:disconnect(Conn),
-	{ok, Return}.
-
+	Result.
+	
+input(Sql, Conn) ->
+	odbc:sql_query(Conn, Sql).
+	
 %% @doc 
 %% Takes a list of SQL Strings and sends them to the database as a bulk operation.
-%% Might be harder to find errors, but faster.
 %% @end
+%% Might be harder to find errors, but faster.
 %% @spec (Sql) -> ({ok,{updated, NRows}} | {ok,{selected, ColNames, Rows}} | {error, Reason})
 %% Sql = [string()]
 bulk_input(Sql) ->
-	{ok, Conn} = odbc:connect("DSN=DB", []),
+	{ok, Conn} = odbc:connect("DSN=PostgreSQL30", []),
+	Result = input(Sql, Conn),
+	odbc:disconnect(Conn),
+	Result.
+	
+bulk_input(Sql, Conn) ->
 	Bulk = string:join(Sql, ";"),
-	try (odbc:sql_query(Conn, Bulk)) of
-		{updated, NRows} ->
+	odbc:sql_query(Conn, Bulk).
+
+mailbox() ->
+	receive
+		{request, Worker_Pid} ->
+			receive
+				{insert, Sql} ->
+					Worker_Pid ! {insert, Sql},
+					mailbox();
+				{select, {Request_Pid, Sql}} ->
+					Worker_Pid ! {select, {Request_Pid, Sql}},
+					mailbox()
+			end;
+		{exit} ->
+			ok;
+		{new_worker} ->
+			spawn(?MODULE, worker, [self()]),
+			mailbox()
+	end.
+
+worker(Pool_Pid) -> 
+	{ok, Conn} = odbc:connect("DSN=PostgreSQL30", []),
+	worker(Pool_Pid, Conn).
+	
+worker(Pool_Pid, Conn) ->
+	Pool_Pid ! {request, self()},
+	receive
+		{insert, Sql} ->
+			query(Sql, Conn),
+			worker(Pool_Pid, Conn);
+		{select, {Request_Pid, Sql}} ->
+			Result = query(Sql, Conn),
+			Request_Pid ! {result, Result},
+			worker(Pool_Pid, Conn);
+		{exit} ->
 			odbc:disconnect(Conn),
-			{ok, {updated, NRows}};
-		{selected, ColNames, Rows} ->
-			odbc:disconnect(Conn),
-			{ok, {selected, ColNames, Rows}}
-	catch
-		{error, Reason} ->
-			odbc:disconnect(Conn),
-			{error, Reason}
+			ok
 	end.
