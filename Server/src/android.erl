@@ -573,14 +573,17 @@ duration(Duration, Amount)->
 			Interval = Amount++"Y",
 			Divider = "8760";
 		"month" ->
-			Interval = Amount++"Months",
+			Interval = Amount++Duration,
 			Divider = "720";
 		"day" ->
 			Interval = Amount++"D",
 			Divider = "24";
 		"hour" ->
 			Interval = Amount++"H",
-			Divider = "1"
+			Divider = "1";
+		"minute" ->
+			Interval = Amount++Duration,
+			Divider = "0.0167"
 	end,
 	{Interval, Divider}.
 	

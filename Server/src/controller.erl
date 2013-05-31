@@ -8,7 +8,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/0,input/0,ack_list/0,send/2,send/3]).
+-export([start/0,input/0,ack_list/0,send/5]).
 
 
 %% ====================================================================
@@ -19,17 +19,11 @@
 %% Starts the controller and registers the process that handles the list of sockets.
 %% @end
 start() ->
-	case whereis(input) of 
-		undefined ->
-			register(input, spawn(?MODULE, input ,[]))
-	end,
-	monitor(process, input),
-	case whereis(ack_list) of 
-		undefined ->
-			register(ack_list, spawn(?MODULE, ack_list ,[]))	
-	end,
-	monitor(process, ack_list),
-	mailbox().
+	Input = spawn_link(?MODULE, input ,[]),
+	erlang:monitor(process, Input),
+	Ack_List = spawn_link(?MODULE, ack_list ,[]),
+	erlang:monitor(process, Ack_List),
+	mailbox(Input, Ack_List).
 	
 
 %% @doc
@@ -52,13 +46,13 @@ input(Data) ->
 			end;
 		{remove, {Socket}} ->
 			input(lists:keydelete(Socket, 2, Data));
-		{get_socket, {PowerStrip_SerialId, Pid}} ->
+		{get_socket, {PowerStrip_SerialId, ReqestPid}} ->
 			case lists:keyfind(PowerStrip_SerialId, 1, Data) of
 				{PowerStrip_SerialId, Socket} ->
-					Pid ! {found, Socket},
+					ReqestPid ! {found, Socket},
 					input(Data);
 				false ->
-					Pid ! {not_found},
+					ReqestPid ! {not_found},
 					input(Data)
 			end
 	end.
@@ -86,26 +80,31 @@ ack_list(Data) ->
 %% @doc
 %% Waits for messages and relays them to the right process.
 %% @end
-mailbox() ->
+mailbox(Input, Ack_List) ->
 	receive
 		{new, {PowerStrip_SerialId, Socket}} ->
-			input ! {new, {PowerStrip_SerialId, Socket}};
+			Input ! {new, {PowerStrip_SerialId, Socket}},
+			mailbox(Input, Ack_List);
 		{remove, {Socket}} ->
-			input ! {remove, {Socket}};
-		{send, {PowerStrip_SerialId, Status}} ->
-			spawn(?MODULE, send, [PowerStrip_SerialId, Status]);
+			Input ! {remove, {Socket}},
+			mailbox(Input, Ack_List );
 		{send, {PowerStrip_SerialId, Status, RequestSocket}} ->
-			spawn(?MODULE, send, [PowerStrip_SerialId, Status, RequestSocket]);
+			spawn(?MODULE, send, [PowerStrip_SerialId, Status, RequestSocket, Input, Ack_List]),
+			mailbox(Input, Ack_List );
 		{ack, PowerStrip_SerialId} ->
 			io:fwrite(PowerStrip_SerialId++"\n"),
-			ack_list ! {ack_checkout, PowerStrip_SerialId};
-		{'DOWN',_,process,{input,_},_} ->
-			register(input, spawn(?MODULE, input ,[])),
-			monitor(process, input);
+			Ack_List ! {ack_checkout, PowerStrip_SerialId},
+			mailbox(Input, Ack_List );
+		{'DOWN' ,_Ref ,process ,Input ,_Reason} ->
+			New_Input = spawn_link(?MODULE, input ,[]),
+			mailbox(New_Input, Ack_List);
+		{'DOWN' ,_Ref ,process ,Ack_List ,_Reason} ->
+			New_Ack_List = spawn_link(?MODULE, ack_list ,[]),
+			mailbox(Input, New_Ack_List);
 		_->
-			io:fwrite("Bad Data\n")
-	end,
-	mailbox().
+			io:fwrite("Bad Data\n"),
+			mailbox(Input, Ack_List )
+	end.
 
 %% @doc
 %% Sends a message to the input process with the SID and then waits for the answer.
@@ -113,30 +112,12 @@ mailbox() ->
 %% @spec (SID, Status) -> (string() | {error, Reason})
 %% SID = string()
 %% Status = string()
-send(PowerStrip_SerialId, Status) ->
-	input ! {get_socket, {PowerStrip_SerialId, self()}},
+send(PowerStrip_SerialId, Status, RequestSocket, Input, Ack_List) ->
+	Input ! {get_socket, {PowerStrip_SerialId, self()}},
 	receive 
 		{found, Socket} ->
 			io:fwrite("Found\n"),
-			case gen_tcp:send(Socket, PowerStrip_SerialId++":"++Status++"\n") of
-				ok ->
-					PowerStrip_Id = integer_to_list(sql_builder:get_powerStripId(PowerStrip_SerialId)),
-					SocketId = [integer_to_list(N) || {N} <- sql_builder:get_socketId(PowerStrip_Id)],
-					Sql = sql_builder:new_status(SocketId, string:tokens(Status, ";")),
-					odbc_unit ! {insert, Sql};
-				{error, _} ->
-					io:fwrite("Could not send to: "++PowerStrip_SerialId++"\n")
-			end;
-		{not_found} ->  
-			io:fwrite("Socket not found \n")
-	end.
-	
-send(PowerStrip_SerialId, Status, RequestSocket) ->
-	input ! {get_socket, {PowerStrip_SerialId, self()}},
-	receive 
-		{found, Socket} ->
-			io:fwrite("Found\n"),
-			ack_list ! {ack_request, {PowerStrip_SerialId, self()}},
+			Ack_List ! {ack_request, {PowerStrip_SerialId, self()}},
 			case gen_tcp:send(Socket, PowerStrip_SerialId++":"++Status++"\n") of
 				ok ->
 					receive 
