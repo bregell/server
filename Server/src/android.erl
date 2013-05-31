@@ -10,7 +10,7 @@
 %% Internal functions
 %% ====================================================================
 decode([Package], Socket) ->
-	io:fwrite("Package data: "++Package),
+	%%io:fwrite("Package data: "++Package),
 	Strip = fun(Str) -> string:sub_string(Str, 2, string:len(Str)-2) end,
 	List = [{A,B} || [A,B] <- [string:tokens(A, ":") || A <- string:tokens(Strip(Package), ",")]],
 	case List of
@@ -280,29 +280,33 @@ getConsumptionUser(UserName, ApiKey, Socket, Duration, Amount) ->
 	{Interval, Divider} = duration(Duration, Amount),
 	Sql =
 	"
-		select sum(activepower), timestamp
-		from 
+		select row_to_json(t)
+		from
 		(
-			select avg(\"activePower\")*("++Divider++") as activepower, date_trunc('"++Duration++"', \"timeStamp\") as timestamp, socket_id
-			from \"powerStrip_consumption\"
-			where \"powerStrip_id\" IN
+			select sum(activepower) as activepower, timestamp
+			from 
 			(
-				select id
-				from \"powerStrip_powerstrip\"
-				where user_id =
-					(
-						select id 
-						from auth_user
-						where username = '"++UserName++"'
-						and apikey = '"++ApiKey++"'
-					)
-			)
-			and \"timeStamp\" BETWEEN (CURRENT_TIMESTAMP - INTERVAL '"++Interval++"')  AND CURRENT_TIMESTAMP
-			group by date_trunc('"++Duration++"', \"timeStamp\"), socket_id
-			order by socket_id asc
-		) as socket
-		group by timestamp
-		order by timestamp asc		
+				select avg(\"activePower\")*("++Divider++") as activepower, date_trunc('"++Duration++"', \"timeStamp\") as timestamp, socket_id
+				from \"powerStrip_consumption\"
+				where \"powerStrip_id\" IN
+				(
+					select id
+					from \"powerStrip_powerstrip\"
+					where user_id =
+						(
+							select id 
+							from auth_user
+							where username = '"++UserName++"'
+							and apikey = '"++ApiKey++"'
+						)
+				)
+				and \"timeStamp\" BETWEEN (CURRENT_TIMESTAMP - INTERVAL '"++Interval++"')  AND CURRENT_TIMESTAMP
+				group by date_trunc('"++Duration++"', \"timeStamp\"), socket_id
+				order by socket_id asc
+			) as socket
+			group by timestamp
+			order by timestamp asc
+		) as t
 	",
 	Result = query(Sql),
 	case Result of
@@ -370,7 +374,7 @@ getConsumptionSocket(SocketId, ApiKey, Socket, Duration, Amount) ->
 			) as atu
 			on atu.user_id = au.id
 			where au.apikey = '"++ApiKey++"'
-			order by timestamp desc
+			order by timestamp asc
 		) as t
 	",
 	Result = query(Sql),
@@ -553,7 +557,8 @@ send(Socket, Message) ->
 	case gen_tcp:send(Socket, "Android#"++Message++"\n") of
 			ok ->
 				%%io:fwrite("Sent: Android#"++Message++"\n"),
-				io:fwrite("Sent to Android OK\n");
+				%%io:fwrite("Sent to Android OK\n");
+				ok;
 			{error, _} ->
 				io:fwrite("Could not send Android#"++Message++"\n")
 	end.
